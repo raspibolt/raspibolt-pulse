@@ -1,5 +1,5 @@
 #!/bin/bash
-# /etc/systemd/system/20-raspibolt-welcome.sh
+# /etc/systemd/system/raspibolt-pulse.sh
 set -u
 
 # make executable and copy script to /etc/update-motd.d/
