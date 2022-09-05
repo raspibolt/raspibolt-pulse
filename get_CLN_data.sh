@@ -28,9 +28,7 @@ echo -ne '\r### Loading LND data \r'
 
 alias_color="${color_grey}"
 ln_alias="$(${lncli} getinfo | jq -r '.alias')" 2>/dev/null
-echo "ln alias $ln_alias"
 ln_walletbalance="$(${lncli} listfunds | jq -r '.outputs')" 2>/dev/null
-echo "ln ln_walletbalance $ln_walletbalance"
 ln_channelbalance="$(${lncli} listfunds | jq -r '.channels')" 2>/dev/null
 
 printf "%0.s#" {1..66}
@@ -43,7 +41,6 @@ node_id="$(${lncli} getinfo | jq -r '.id')" 2>/dev/null
 node_address="$(${lncli} getinfo | jq -r '.address[0].address')" 2>/dev/null
 ln_connect_addr="$node_id"@"$node_address" 2>/dev/null
 ln_connect_guidance="lightning-cli connect ${ln_connect_addr}"
-echo "ln_connect_addr $ln_connect_addr"
 ln_external="$(echo "${ln_connect_addr}" | tr "@" " " |  awk '{ print $2 }')" 2>/dev/null
 if [ -z "${ln_external##*onion*}" ]; then
   ln_external="Using TOR Address"
@@ -85,8 +82,6 @@ fi
 
 #create variable ln_version
 lndpi=$($lncli getinfo |jq -r '.version')
-echo "pi $lndpi"
-echo "git $ln_git_version"
 if [ "${lndpi}" = "${ln_git_version}" ]; then
   ln_version="${lndpi}"
   ln_version_color="${color_green}"
@@ -94,7 +89,6 @@ else
   ln_version="${lndpi}"" Update!"
   ln_version_color="${color_red}"
 fi
-echo "debug $ln_version"
 #get channel.db size
 coreln_dir="/data/cln"
 ln_channel_db_size=$(du -h ${coreln_dir}/bitcoin/lightningd.sqlite3 | awk '{print $1}')
