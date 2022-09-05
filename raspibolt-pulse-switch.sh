@@ -11,7 +11,7 @@ set -u
 # set datadir
 bitcoin_dir="/data/bitcoin"
 # Chose between LND and CLN
-ln_implemenation="LND"
+ln_implemenation="CLN"
 
 # set to mount point of secondary storage. This is used to calculate secondary USB usage %
 ext_storage2nd="/mnt/ext"
@@ -257,16 +257,16 @@ case "${btcpi}" in
 esac
 
 
-# Gather LND data
+# Gather LN data
 # ------------------------------------------------------------------------------
 printf "%0.s#" {1..60}
-./get_lnd_data.sh $chain $color_green $color_red $ln_git_version
+"./get_"$ln_implemenation"_data.sh" $chain $color_green $color_red $ln_git_version
+
 lnd_infofile="${HOME}/.raspibolt.lndata.json"
 ln_file_content=$(cat $lnd_infofile)
 ln_color="$(echo $ln_file_content | jq -r '.ln_color')"
 ln_version_color="$(echo $ln_file_content | jq -r '.ln_version_color')"
 alias_color="$(echo $ln_file_content | jq -r '.alias_color')"
-
 ln_running="$(echo $ln_file_content | jq -r '.ln_running')"
 ln_version="$(echo $ln_file_content | jq -r '.ln_version')"
 ln_walletbalance="$(echo $ln_file_content | jq -r '.ln_walletbalance')"
