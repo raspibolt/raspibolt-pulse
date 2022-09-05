@@ -5,6 +5,8 @@ A bash script to monitor a RaspiBolt node health and activity at a glance.
 ## Installation
 `cd /tmp`
 
+`git clone https://github.com/raspibolt/raspibolt-pulse`
+
 `sudo cp *.sh /usr/local/bin/`
 
 `sudo mv /usr/local/bin/raspibolt-pulse-switch.sh /usr/local/bin/raspibolt`
