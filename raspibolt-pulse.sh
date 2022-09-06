@@ -27,6 +27,7 @@ color_red='\033[0;31m'
 color_green='\033[0;32m'
 color_yellow='\033[0;33m'
 color_grey='\033[0;37m'
+color_orange='\033[38;5;208m'
 
 # controlled abort on Ctrl-C
 trap_ctrlC() {
@@ -63,7 +64,7 @@ fi
 # Print first welcome message
 # ------------------------------------------------------------------------------
 printf "
-${color_yellow}RaspiBolt %s:${color_grey} Sovereign Bitcoin full node
+${color_yellow}RaspiBolt %s:${color_grey} Sovereign \033[1m"₿"\033[22mitcoin full node
 ${color_yellow}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 " "3"
 
@@ -202,7 +203,7 @@ else
 fi
 btc_path=$(command -v bitcoin-cli)
 if [ -n "${btc_path}" ]; then
-  btc_title="฿itcoin"
+  btc_title="itcoin"
   chain="$(bitcoin-cli -datadir=${bitcoin_dir} getblockchaininfo | jq -r '.chain')"
 
   btc_title="${btc_title} (${chain}net)"
@@ -471,10 +472,10 @@ echo -ne "\033[2K"
 printf "${color_grey}cpu temp: ${color_temp}%-2s°C${color_grey}  tx: %-10s storage:   ${color_storage}%-11s ${color_grey}  load: %s
 ${color_grey}up: %-10s  rx: %-10s 2nd drive: ${color_storage2nd}%-11s${color_grey}   available mem: ${color_ram}%sM
 ${color_yellow}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-${color_green}     .~~.   .~~.      ${color_yellow}%-22s${bitcoind_color}%-4s${color_grey}   ${color_yellow}%-20s${lnd_color}%-4s
+${color_green}     .~~.   .~~.      ${color_yellow}\033[1m"₿"\033[22m%-19s${bitcoind_color}%-4s${color_grey}   ${color_yellow}%-20s${lnd_color}%-4s
 ${color_green}    '. \ ' ' / .'     ${btcversion_color}%-26s ${lndversion_color}%-24s
 ${color_red}     .~ .~~~${color_yellow}.${color_red}.~.      ${color_grey}Sync    ${sync_color}%-18s ${alias_color}%-24s
-${color_red}    : .~.'${color_yellow}／/${color_red}~. :     ${color_grey}Mempool %-18s ${color_grey}฿%17s sat
+${color_red}    : .~.'${color_yellow}／/${color_red}~. :     ${color_grey}Mempool %-18s ${color_orange}\033[1m"₿"\033[22m${color_grey}%17s sat
 ${color_red}   ~ (  ${color_yellow}／ /_____${color_red}~    ${color_grey}Peers   %-22s ${color_grey}⚡%16s sat
 ${color_red}  ( : ${color_yellow}／____   ／${color_red} )                              ${color_grey}⏳%16s sat
 ${color_red}   ~ .~ (  ${color_yellow}/ ／${color_red}. ~    ${color_yellow}%-20s${electrs_color}%-4s   ${color_grey}∑%17s sat
