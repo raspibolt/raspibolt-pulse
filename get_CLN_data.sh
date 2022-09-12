@@ -28,9 +28,17 @@ echo -ne '\r### Loading LND data \r'
 
 alias_color="${color_grey}"
 ln_alias="$(${lncli} getinfo | jq -r '.alias')" 2>/dev/null
-ln_walletbalance="$(${lncli} listfunds | jq -r '.outputs')" 2>/dev/null
-ln_channelbalance="$(${lncli} listfunds | jq -r '.channels')" 2>/dev/null
-
+# jq '[.duration] | add'
+ln_walletbalance="$(${lncli} listfunds | jq -r '.outputs[0].value | tonumber')" 2>/dev/null
+echo "wallet bal $ln_walletbalance"
+if [ -z "${ln_walletbalance}" ]; then
+  ln_walletbalance=0
+fi
+ln_channelbalance="$(${lncli} listfunds | jq -r '.channels[0].our_amount_msat | gsub("msat";"")| tonumber' |  awk '{print $1/1000}' )" 2>/dev/null
+echo "ln_channelbalance bal $ln_channelbalance"
+if [ -z "${ln_channelbalance}" ]; then
+  ln_channelbalance=0
+fi
 printf "%0.s#" {1..66}
 
 echo -ne '\r### Loading CoreLN data \r'
