@@ -18,6 +18,7 @@ ext_storage2nd="/mnt/ext"
 
 # set to network device name (usually "eth0" for ethernet, and "wlan0" for wifi)
 network_name="eth0"
+#network_name="enp0s31f6"
 
 
 # Helper functionality
@@ -79,6 +80,8 @@ uptime=$(w|head -1|sed -E 's/.*up (.*),.*user.*/\1/'|sed -E 's/([0-9]* days).*/\
 
 # get CPU temp
 cpu=$(cat /sys/class/thermal/thermal_zone0/temp)
+# cpu=$(cat /sys/class/thermal/thermal_zone3/temp)
+
 temp=$((cpu/1000))
 if [ ${temp} -gt 60 ]; then
   color_temp="${color_red}\e[7m"

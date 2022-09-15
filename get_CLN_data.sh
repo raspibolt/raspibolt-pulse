@@ -1,4 +1,5 @@
 #!/bin/bash
+chain=$1
 color_green=$2
 color_red=$3
 ln_git_version=$4
@@ -48,7 +49,8 @@ ln_channels_online="$(${lncli} getinfo | jq -r '.num_active_channels')" 2>/dev/n
 ln_channels_total="$(${lncli} listincoming | jq '.[] | length')" 2>/dev/null
 node_id="$(${lncli} getinfo | jq -r '.id')" 2>/dev/null
 node_address="$(${lncli} getinfo | jq -r '.address[0].address')" 2>/dev/null
-ln_connect_addr="$node_id"@"$node_address" 2>/dev/null
+node_port="$(${lncli} getinfo | jq -r '.address[0].port')" 2>/dev/null
+ln_connect_addr="$node_id"@"$node_address":"$node_port" 2>/dev/null
 ln_connect_guidance="lightning-cli connect ${ln_connect_addr}"
 ln_external="$(echo "${ln_connect_addr}" | tr "@" " " |  awk '{ print $2 }')" 2>/dev/null
 if [ -z "${ln_external##*onion*}" ]; then
