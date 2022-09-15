@@ -1,5 +1,4 @@
 #!/bin/bash
-chain=$1
 color_green=$2
 color_red=$3
 ln_git_version=$4
