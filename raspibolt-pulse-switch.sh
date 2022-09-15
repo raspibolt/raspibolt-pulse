@@ -11,7 +11,7 @@ set -u
 # set datadir
 bitcoin_dir="/data/bitcoin"
 # Chose between LND and CLN
-ln_implemenation="LND"
+ln_implemenation="CLN"
 
 # set to mount point of secondary storage. This is used to calculate secondary USB usage %
 ext_storage2nd="/mnt/ext"
@@ -126,6 +126,15 @@ fi
 network_rx=$(ifconfig ${network_name} | grep 'RX packets' | awk '{ print $6$7 }' | sed 's/[()]//g')
 network_tx=$(ifconfig ${network_name} | grep 'TX packets' | awk '{ print $6$7 }' | sed 's/[()]//g')
 
+# set lightning git repo URL
+if [ $ln_implemenation = "CLN" ]; then
+  ln_git_repo_url="https://api.github.com/repos/ElementsProject/lightning/releases/latest"
+fi
+
+if [ $ln_implemenation = "LND" ]; then
+  ln_git_repo_url="https://api.github.com/repos/lightningnetwork/lnd/releases/latest"
+fi
+
 # Gather application versions
 # ------------------------------------------------------------------------------
 
@@ -140,7 +149,8 @@ fi
 if [ "${gitupdate}" -eq "1" ]; then
   # Calls to github
   btcgit=$(curl -s https://api.github.com/repos/bitcoin/bitcoin/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
-  ln_git_version=$(curl -s https://api.github.com/repos/lightningnetwork/lnd/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
+
+  ln_git_version=$(curl -s $ln_git_repo_url | grep -oP '"tag_name": "\K(.*)(?=")')
   # Electrs, RPC Explorer and RTL dont have a latest release, just tags
   electrsgit=$(curl -s https://api.github.com/repos/romanz/electrs/tags | jq -r '.[0].name')
   btcrpcexplorergit=$(curl -s https://api.github.com/repos/janoside/btc-rpc-explorer/tags | jq -r '.[0].name')
@@ -160,7 +170,7 @@ else
     btcgit=$(curl -s https://api.github.com/repos/bitcoin/bitcoin/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
   fi
   if [ -z "$ln_git_version" ]; then
-    ln_git_version=$(curl -s https://api.github.com/repos/lightningnetwork/lnd/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
+    ln_git_version=$(curl -s $ln_git_repo_url | grep -oP '"tag_name": "\K(.*)(?=")')
   fi
   if [ -z "$electrsgit" ]; then
     electrsgit=$(curl -s https://api.github.com/repos/romanz/electrs/tags | jq -r '.[0].name')
