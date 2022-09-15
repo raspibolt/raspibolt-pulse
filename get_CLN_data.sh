@@ -23,19 +23,21 @@ fi
 lncli="/home/cln/lightning/cli/lightning-cli"
 
 printf "%0.s#" {1..63}
-echo -ne '\r### Loading LND data \r'
+echo -ne '\r### Loading CoreLN data \r'
 
 
 alias_color="${color_grey}"
 ln_alias="$(${lncli} getinfo | jq -r '.alias')" 2>/dev/null
 # jq '[.duration] | add'
-ln_walletbalance="$(${lncli} listfunds | jq -r '.outputs[0].value | tonumber')" 2>/dev/null
-echo "wallet bal $ln_walletbalance"
+ln_walletbalance=0
+potential_wallet_balance="$(${lncli} listfunds | jq -r '.outputs[0].value')"
+if [ -n $potential_wallet_balance ];then
+ln_walletbalance=$(${lncli} listfunds | jq -r '.outputs[0].value | tonumber')
+fi
 if [ -z "${ln_walletbalance}" ]; then
   ln_walletbalance=0
 fi
 ln_channelbalance="$(${lncli} listfunds | jq -r '.channels[0].our_amount_msat | gsub("msat";"")| tonumber' |  awk '{print $1/1000}' )" 2>/dev/null
-echo "ln_channelbalance bal $ln_channelbalance"
 if [ -z "${ln_channelbalance}" ]; then
   ln_channelbalance=0
 fi
@@ -55,26 +57,27 @@ if [ -z "${ln_external##*onion*}" ]; then
 fi
 
 printf "%0.s#" {1..70}
-echo -ne '\r### Loading LND data \r'
+# echo -ne '\r### Loading LND data \r'
 
-ln_pendingopen=$($lncli pendingchannels  | jq '.pending_open_channels[].channel.local_balance|tonumber ' | awk '{sum+=$0} END{print sum}')
-if [ -z "${ln_pendingopen}" ]; then
-  ln_pendingopen=0
-fi
+# ln_pendingopen=$($lncli pendingchannels  | jq '.pending_open_channels[].channel.local_balance|tonumber ' | awk '{sum+=$0} END{print sum}')
+# if [ -z "${ln_pendingopen}" ]; then
+#   ln_pendingopen=0
+# fi
 
-ln_pendingforce=$($lncli pendingchannels  | jq '.pending_force_closing_channels[].channel.local_balance|tonumber ' | awk '{sum+=$0} END{print sum}')
-if [ -z "${ln_pendingforce}" ]; then
-  ln_pendingforce=0
-fi
+# ln_pendingforce=$($lncli pendingchannels  | jq '.pending_force_closing_channels[].channel.local_balance|tonumber ' | awk '{sum+=$0} END{print sum}')
+# if [ -z "${ln_pendingforce}" ]; then
+#   ln_pendingforce=0
+# fi
 
-ln_waitingclose=$($lncli pendingchannels  | jq '.waiting_close_channels[].channel.local_balance|tonumber ' | awk '{sum+=$0} END{print sum}')
-if [ -z "${ln_waitingclose}" ]; then
-  ln_waitingclose=0
-fi
+# ln_waitingclose=$($lncli pendingchannels  | jq '.waiting_close_channels[].channel.local_balance|tonumber ' | awk '{sum+=$0} END{print sum}')
+# if [ -z "${ln_waitingclose}" ]; then
+#   ln_waitingclose=0
+# fi
 
-echo -ne '\r### Loading LND data \r'
+# echo -ne '\r### Loading LND data \r'
 
-ln_pendinglocal=$((ln_pendingopen + ln_pendingforce + ln_waitingclose))
+# ln_pendinglocal=$((ln_pendingopen + ln_pendingforce + ln_waitingclose))
+ln_pendinglocal=0
 
 ln_sum_balance=0
 if [ -n "${ln_channelbalance}" ]; then
