@@ -11,7 +11,7 @@ set -u
 # set datadir
 bitcoin_dir="/data/bitcoin"
 # Chose between LND and CLN
-ln_implemenation="CLN"
+ln_implemenation="LND"
 
 # set to mount point of secondary storage. This is used to calculate secondary USB usage %
 ext_storage2nd="/mnt/ext"
