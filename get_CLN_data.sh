@@ -28,15 +28,14 @@ echo -ne '\r### Loading CoreLN data \r'
 
 alias_color="${color_grey}"
 ln_alias="$(${lncli} getinfo | jq -r '.alias')" 2>/dev/null
-# jq '[.duration] | add'
+
 ln_walletbalance=0
-potential_wallet_balance="$(${lncli} listfunds | jq -r '.outputs[0].value')"
-if [ -n $potential_wallet_balance ];then
+#check if len(outputs) == 0 --> empty wallet
+amount_of_wallet_transactions="$(${lncli} listfunds | jq -r '.outputs | length')"
+if [ $amount_of_wallet_transactions -gt 0 ];then
 ln_walletbalance=$(${lncli} listfunds | jq -r '.outputs[0].value | tonumber')
 fi
-if [ -z "${ln_walletbalance}" ]; then
-  ln_walletbalance=0
-fi
+
 ln_channelbalance="$(${lncli} listfunds | jq -r '.channels[0].our_amount_msat | gsub("msat";"")| tonumber' |  awk '{print $1/1000}' )" 2>/dev/null
 if [ -z "${ln_channelbalance}" ]; then
   ln_channelbalance=0
