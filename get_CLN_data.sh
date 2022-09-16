@@ -36,9 +36,12 @@ if [ $amount_of_wallet_transactions -gt 0 ];then
 ln_walletbalance=$(${lncli} listfunds | jq -r '.outputs[0].value | tonumber')
 fi
 
-ln_channelbalance="$(${lncli} listfunds | jq -r '.channels[0].our_amount_msat | gsub("msat";"")| tonumber' |  awk '{print $1/1000}' )" 2>/dev/null
-if [ -z "${ln_channelbalance}" ]; then
-  ln_channelbalance=0
+## Show channel balance
+ln_channelbalance=0
+#check if len(channels) == 0 --> no channels
+amount_of_channels="$(${lncli} listfunds | jq -r '.channels | length')"
+if [ $amount_of_channels -gt 0 ];then
+ln_channelbalance=$(${lncli} listfunds | jq -r '.channels[0].our_amount_msat // 0 | gsub("msat";"") | tonumber' | awk '{print $1/1000}' )
 fi
 printf "%0.s#" {1..66}
 
