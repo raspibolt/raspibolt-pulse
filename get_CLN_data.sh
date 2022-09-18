@@ -47,8 +47,10 @@ printf "%0.s#" {1..66}
 
 echo -ne '\r### Loading CoreLN data \r'
 
-ln_channels_online="$(${lncli} getinfo | jq -r '.num_active_channels')" 2>/dev/null
-ln_channels_total="$(${lncli} listincoming | jq '.[] | length')" 2>/dev/null
+ln_channels_online="$(${lncli} getinfo | jq -r '.num_active_channels | tonumber')" 2>/dev/null
+ln_channels_pending = "$(${lncli} getinfo | jq -r '.num_pending_channels | tonumber')" 2>/dev/null
+ln_channels_inactive = "$(${lncli} getinfo | jq -r '.num_inactive_channels | tonumber')" 2>/dev/null
+ln_channels_total=$((ln_channels_online + ln_channels_pending + ln_channels_inactive))
 node_id="$(${lncli} getinfo | jq -r '.id')" 2>/dev/null
 node_address="$(${lncli} getinfo | jq -r '.address[0].address')" 2>/dev/null
 node_port="$(${lncli} getinfo | jq -r '.address[0].port')" 2>/dev/null
