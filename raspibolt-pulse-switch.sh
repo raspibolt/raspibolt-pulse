@@ -10,13 +10,15 @@ set -u
 
 # set datadir
 bitcoin_dir="/data/bitcoin"
-lnd_dir="/data/lnd"
+# Chose between LND and CLN
+ln_implemenation="LND"
 
 # set to mount point of secondary storage. This is used to calculate secondary USB usage %
 ext_storage2nd="/mnt/ext"
 
 # set to network device name (usually "eth0" for ethernet, and "wlan0" for wifi)
-network_name="wlan0"
+network_name="eth0"
+#network_name="enp0s31f6"
 
 
 # Helper functionality
@@ -78,6 +80,8 @@ uptime=$(w|head -1|sed -E 's/.*up (.*),.*user.*/\1/'|sed -E 's/([0-9]* days).*/\
 
 # get CPU temp
 cpu=$(cat /sys/class/thermal/thermal_zone0/temp)
+# cpu=$(cat /sys/class/thermal/thermal_zone3/temp)
+
 temp=$((cpu/1000))
 if [ ${temp} -gt 60 ]; then
   color_temp="${color_red}\e[7m"
@@ -122,8 +126,17 @@ else
 fi
 
 # get network traffic
-network_rx=$(ifconfig ${network_name} | grep 'RX packets' | awk '{ print $6$7 }' | sed 's/[()]//g')
-network_tx=$(ifconfig ${network_name} | grep 'TX packets' | awk '{ print $6$7 }' | sed 's/[()]//g')
+network_rx=$(ip -h -s link show dev ${network_name} | grep -A1 RX | tail -1 | awk '{print $1}')
+network_tx=$(ip -h -s link show dev ${network_name} | grep -A1 TX | tail -1 | awk '{print $1}')
+
+# set lightning git repo URL
+if [ $ln_implemenation = "CLN" ]; then
+  ln_git_repo_url="https://api.github.com/repos/ElementsProject/lightning/releases/latest"
+fi
+
+if [ $ln_implemenation = "LND" ]; then
+  ln_git_repo_url="https://api.github.com/repos/lightningnetwork/lnd/releases/latest"
+fi
 
 # Gather application versions
 # ------------------------------------------------------------------------------
@@ -139,17 +152,18 @@ fi
 if [ "${gitupdate}" -eq "1" ]; then
   # Calls to github
   btcgit=$(curl -s https://api.github.com/repos/bitcoin/bitcoin/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
-  lndgit=$(curl -s https://api.github.com/repos/lightningnetwork/lnd/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
+
+  ln_git_version=$(curl -s $ln_git_repo_url | grep -oP '"tag_name": "\K(.*)(?=")')
   # Electrs, RPC Explorer and RTL dont have a latest release, just tags
   electrsgit=$(curl -s https://api.github.com/repos/romanz/electrs/tags | jq -r '.[0].name')
   btcrpcexplorergit=$(curl -s https://api.github.com/repos/janoside/btc-rpc-explorer/tags | jq -r '.[0].name')
   rtlgit=$(curl -s https://api.github.com/repos/Ride-The-Lightning/RTL/tags | jq -r '.[] | select(.name | test("rc") | not) | .name' | head -n 1)
   # write to file TODO: convert to JSON for sanity
-  printf "%s\n%s\n%s\n%s\n%s\n" "${btcgit}" "${lndgit}" "${electrsgit}" "${btcrpcexplorergit}" "${rtlgit}" > "${gitstatusfile}"
+  printf "%s\n%s\n%s\n%s\n%s\n" "${btcgit}" "${ln_git_version}" "${electrsgit}" "${btcrpcexplorergit}" "${rtlgit}" > "${gitstatusfile}"
 else
   # read from file
   btcgit=$(sed -n '1p' < "${gitstatusfile}")
-  lndgit=$(sed -n '2p' < "${gitstatusfile}")
+  ln_git_version=$(sed -n '2p' < "${gitstatusfile}")
   electrsgit=$(sed -n '3p' < "${gitstatusfile}")
   btcrpcexplorergit=$(sed -n '4p' < "${gitstatusfile}")
   rtlgit=$(sed -n '5p' < "${gitstatusfile}")
@@ -158,8 +172,8 @@ else
   if [ -z "$btcgit" ]; then
     btcgit=$(curl -s https://api.github.com/repos/bitcoin/bitcoin/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
   fi
-  if [ -z "$lndgit" ]; then
-    lndgit=$(curl -s https://api.github.com/repos/lightningnetwork/lnd/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
+  if [ -z "$ln_git_version" ]; then
+    ln_git_version=$(curl -s $ln_git_repo_url | grep -oP '"tag_name": "\K(.*)(?=")')
   fi
   if [ -z "$electrsgit" ]; then
     electrsgit=$(curl -s https://api.github.com/repos/romanz/electrs/tags | jq -r '.[0].name')
@@ -170,7 +184,7 @@ else
   if [ -z "$rtlgit" ]; then
     rtlgit=$(curl -s https://api.github.com/repos/Ride-The-Lightning/RTL/tags | jq -r '.[] | select(.name | test("rc") | not) | .name' | head -n 1)
   fi
-  printf "%s\n%s\n%s\n%s\n%s\n" "${btcgit}" "${lndgit}" "${electrsgit}" "${btcrpcexplorergit}" "${rtlgit}" > "${gitstatusfile}"
+  printf "%s\n%s\n%s\n%s\n%s\n" "${btcgit}" "${ln_git_version}" "${electrsgit}" "${btcrpcexplorergit}" "${rtlgit}" > "${gitstatusfile}"
 fi
 
 # create variable btcversion
@@ -256,123 +270,31 @@ case "${btcpi}" in
 esac
 
 
-# Gather LND data
+# Gather LN data
 # ------------------------------------------------------------------------------
 printf "%0.s#" {1..60}
-echo -ne '\r### Loading LND data \r'
+"/usr/local/bin/get_"$ln_implemenation"_data.sh" $chain $color_green $color_red $ln_git_version
 
-if [ "${chain}" = "test" ]; then
-  macaroon_path="${lnd_dir}/data/chain/bitcoin/testnet/readonly.macaroon"
-else
-  macaroon_path="${lnd_dir}/data/chain/bitcoin/mainnet/readonly.macaroon"
-fi
-lnd_running=$(systemctl is-active lnd)
-lnd_color="${color_green}"
-if [ -z "${lnd_running##*inactive*}" ]; then
-  lnd_running="down"
-  lnd_color="${color_red}\e[7m"
-else
-  if [ -z "${lnd_running##*failed*}" ]; then
-    lnd_running="down"
-    lnd_color="${color_red}\e[7m"
-  else
-    lnd_running="up"
-  fi
-fi
-if [ -z "${lnd_running##*up*}" ] ; then
-  lncli="/usr/local/bin/lncli --macaroonpath=${macaroon_path} --tlscertpath=${lnd_dir}/tls.cert"
-  $lncli getinfo 2>&1 | grep "Please unlock" >/dev/null
-  wallet_unlocked=$?
-else
-  wallet_unlocked=0
-fi
-printf "%0.s#" {1..63}
-echo -ne '\r### Loading LND data \r'
+lnd_infofile="${HOME}/.raspibolt.lndata.json"
+ln_file_content=$(cat $lnd_infofile)
+ln_color="$(echo $ln_file_content | jq -r '.ln_color')"
+ln_version_color="$(echo $ln_file_content | jq -r '.ln_version_color')"
+alias_color="$(echo $ln_file_content | jq -r '.alias_color')"
+ln_running="$(echo $ln_file_content | jq -r '.ln_running')"
+ln_version="$(echo $ln_file_content | jq -r '.ln_version')"
+ln_walletbalance="$(echo $ln_file_content | jq -r '.ln_walletbalance')"
+ln_channelbalance="$(echo $ln_file_content | jq -r '.ln_channelbalance')"
+ln_pendinglocal="$(echo $ln_file_content | jq -r '.ln_pendinglocal')"
+ln_sum_balance="$(echo $ln_file_content | jq -r '.ln_sum_balance')"
+ln_channels_online="$(echo $ln_file_content | jq -r '.ln_channels_online')"
+ln_channels_total="$(echo $ln_file_content | jq -r '.ln_channels_total')"
+ln_channel_db_size="$(echo $ln_file_content | jq -r '.ln_channel_db_size')"
+ln_connect_guidance="$(echo $ln_file_content | jq -r '.ln_connect_guidance')"
+ln_alias="$(echo $ln_file_content | jq -r '.ln_alias')"
 
-if [ "$wallet_unlocked" -eq "0" ] ; then
-  alias_color="${color_red}"
-  ln_alias="Wallet Locked"
-  ln_walletbalance="?"
-  ln_channelbalance="?"
-  ln_channels_online="?"
-  ln_channels_total="?"
-  ln_connect_addr=""
-  ln_external=""
-  ln_pendingopen="?"
-  ln_pendingforce="?"
-  ln_waitingclose="?"
-  ln_pendinglocal="?"
-  sum_balance="?"
-  if [ $lnd_running = "up" ]; then
-    ln_connect_guidance="You must first unlock your wallet:   lncli unlock"
-  else
-    ln_connect_guidance="The LND service is down. Start the service:   sudo systemctl start lnd"
-  fi
-else
-  alias_color="${color_grey}"
-  ln_alias="$(${lncli} getinfo | jq -r '.alias')" 2>/dev/null
-  ln_walletbalance="$(${lncli} walletbalance | jq -r '.confirmed_balance')" 2>/dev/null
-  ln_channelbalance="$(${lncli} channelbalance | jq -r '.balance')" 2>/dev/null
 
-  printf "%0.s#" {1..66}
 
-  echo -ne '\r### Loading LND data \r'
 
-  ln_channels_online="$(${lncli} getinfo | jq -r '.num_active_channels')" 2>/dev/null
-  ln_channels_total="$(${lncli} listchannels | jq '.[] | length')" 2>/dev/null
-  ln_connect_addr="$(${lncli} getinfo | jq -r '.uris[0]')" 2>/dev/null
-  ln_connect_guidance="lncli connect ${ln_connect_addr}"
-  ln_external="$(echo "${ln_connect_addr}" | tr "@" " " |  awk '{ print $2 }')" 2>/dev/null
-  if [ -z "${ln_external##*onion*}" ]; then
-    ln_external="Using TOR Address"
-  fi
-
-  printf "%0.s#" {1..70}
-  echo -ne '\r### Loading LND data \r'
-
-  ln_pendingopen=$($lncli pendingchannels  | jq '.pending_open_channels[].channel.local_balance|tonumber ' | awk '{sum+=$0} END{print sum}')
-  if [ -z "${ln_pendingopen}" ]; then
-    ln_pendingopen=0
-  fi
-
-  ln_pendingforce=$($lncli pendingchannels  | jq '.pending_force_closing_channels[].channel.local_balance|tonumber ' | awk '{sum+=$0} END{print sum}')
-  if [ -z "${ln_pendingforce}" ]; then
-    ln_pendingforce=0
-  fi
-
-  ln_waitingclose=$($lncli pendingchannels  | jq '.waiting_close_channels[].channel.local_balance|tonumber ' | awk '{sum+=$0} END{print sum}')
-  if [ -z "${ln_waitingclose}" ]; then
-    ln_waitingclose=0
-  fi
-
-  echo -ne '\r### Loading LND data \r'
-
-  ln_pendinglocal=$((ln_pendingopen + ln_pendingforce + ln_waitingclose))
-
-  sum_balance=0
-  if [ -n "${ln_channelbalance}" ]; then
-    sum_balance=$((ln_channelbalance + sum_balance ))
-  fi
-  if [ -n "${ln_walletbalance}" ]; then
-    sum_balance=$((ln_walletbalance + sum_balance ))
-  fi
-  if [ -n "$ln_pendinglocal" ]; then
-    sum_balance=$((sum_balance + ln_pendinglocal ))
-  fi
-fi
-
-#create variable lndversion
-lndpi=$(lncli getinfo | sed -n 's/^\(.*\)=\(.\+\?\)"\(.*\)/\2/p')
-if [ "${lndpi}" = "${lndgit}" ]; then
-  lndversion="${lndpi}"
-  lndversion_color="${color_green}"
-else
-  lndversion="${lndpi}"" Update!"
-  lndversion_color="${color_red}"
-fi
-
-#get channel.db size
-channel_db_size=$(du -h ${lnd_dir}/data/graph/mainnet/channel.db | awk '{print $1}')
 
 
 # Gather Electrs data
@@ -471,8 +393,8 @@ echo -ne "\033[2K"
 printf "${color_grey}cpu temp: ${color_temp}%-2s°C${color_grey}  tx: %-10s storage:   ${color_storage}%-11s ${color_grey}  load: %s
 ${color_grey}up: %-10s  rx: %-10s 2nd drive: ${color_storage2nd}%-11s${color_grey}   available mem: ${color_ram}%sM
 ${color_yellow}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-${color_green}     .~~.   .~~.      ${color_yellow}%-22s${bitcoind_color}%-4s${color_grey}   ${color_yellow}%-20s${lnd_color}%-4s
-${color_green}    '. \ ' ' / .'     ${btcversion_color}%-26s ${lndversion_color}%-24s
+${color_green}     .~~.   .~~.      ${color_yellow}%-22s${bitcoind_color}%-4s${color_grey}   ${color_yellow}%-20s${ln_color}%-4s
+${color_green}    '. \ ' ' / .'     ${btcversion_color}%-26s ${ln_version_color}%-24s
 ${color_red}     .~ .~~~${color_yellow}.${color_red}.~.      ${color_grey}Sync    ${sync_color}%-18s ${alias_color}%-24s
 ${color_red}    : .~.'${color_yellow}／/${color_red}~. :     ${color_grey}Mempool %-18s ${color_grey}฿%17s sat
 ${color_red}   ~ (  ${color_yellow}／ /_____${color_red}~    ${color_grey}Peers   %-22s ${color_grey}⚡%16s sat
@@ -490,15 +412,15 @@ ${color_grey}%s
 " \
 "${temp}" "${network_tx}" "${storage} free" "${load}" \
 "${uptime}" "${network_rx}" "${storage2nd}" "${ram_avail}" \
-"${btc_title}" "${bitcoind_running}" "Lightning (LND)" "${lnd_running}" \
-"${btcversion}" "${lndversion}" \
+"${btc_title}" "${bitcoind_running}" "Lightning ($ln_implemenation)" "${ln_running}" \
+"${btcversion}" "${ln_version}" \
 "${sync} ${sync_behind}" "${ln_alias}" \
 "${mempool} tx" "${ln_walletbalance}" \
 "${connections} (📥${inbound} /📤${outbound})" "${ln_channelbalance}" \
 "${ln_pendinglocal}" \
-"Electrum" "${electrs_running}" "${sum_balance}" \
+"Electrum" "${electrs_running}" "${ln_sum_balance}" \
 "${electrsversion}" "${ln_channels_online}" "${ln_channels_total}" \
-"${channel_db_size}" \
+"${ln_channel_db_size}" \
 "Block Explorer" "${btcrpcexplorer_running}" \
 "${btcrpcexplorerversion}" "RTL" "${rtl_running}" \
 "${rtlversion}" \
