@@ -126,8 +126,8 @@ else
 fi
 
 # get network traffic
-network_rx=$(ifconfig ${network_name} | grep 'RX packets' | awk '{ print $6$7 }' | sed 's/[()]//g')
-network_tx=$(ifconfig ${network_name} | grep 'TX packets' | awk '{ print $6$7 }' | sed 's/[()]//g')
+network_rx=$(ip -h -s link show dev eth0 | grep -A1 RX | tail -1 | awk '{print $1}')
+network_tx=$(ip -h -s link show dev eth0 | grep -A1 TX | tail -1 | awk '{print $1}')
 
 # set lightning git repo URL
 if [ $ln_implemenation = "CLN" ]; then
