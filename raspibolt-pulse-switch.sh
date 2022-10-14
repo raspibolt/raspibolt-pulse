@@ -9,7 +9,10 @@ set -u
 # ------------------------------------------------------------------------------
 
 # set datadir
-bitcoin_dir="/data/bitcoin"
+bitcoin_dir="/mnt/ext/bitcoin"    # Raspibolt 1.x, 2.x
+if [ -d "/data/bitcoin" ]; then
+  bitcoin_dir="/data/bitcoin"     # Raspibolt 3.x
+fi
 # Chose between LND and CLN
 ln_implemenation="LND"
 
@@ -141,51 +144,94 @@ fi
 
 # Gather application versions
 # ------------------------------------------------------------------------------
+gitstatusfile="${HOME}/.raspibolt.versions.json"
 
-# GitHub calls for version info, limited to once a day
-gitstatusfile="${HOME}/.raspibolt.versions"
+save_raspibolt_versions() {
+  # write to json file
+  cat >${gitstatusfile} <<EOF
+{
+  "githubversions": {
+    "bitcoin": "${btcgit}",
+    "lightning": "${ln_git_version}",
+    "electrs": "${electrsgit}",
+    "blockexplorer": "${btcrpcexplorergit}",
+    "rtl": "${rtlgit}"
+  }
+}
+EOF
+}
+
+load_raspibolt_versions() {
+  btcgit=$(cat ${gitstatusfile} | jq -r '.githubversions.bitcoin')
+  ln_git_version=$(cat ${gitstatusfile} | jq -r '.githubversions.lightning')
+  electrsgit=$(cat ${gitstatusfile} | jq -r '.githubversions.electrs')
+  btcrpcexplorergit=$(cat ${gitstatusfile} | jq -r '.githubversions.blockexplorer')
+  rtlgit=$(cat ${gitstatusfile} | jq -r '.githubversions.rtl')
+}
+
+fetch_githubversion_bitcoin() {
+  btcgit=$(curl -s --connect-timeout 5 https://api.github.com/repos/bitcoin/bitcoin/releases/latest | jq -r '.tag_name | select(.!=null)')
+}
+fetch_githubversion_lightning() {
+  ln_git_version=$(curl -s --connect-timeout 5 $ln_git_repo_url | jq -r '.tag_name | select(.!=null)')
+}
+fetch_githubversion_electrs() {
+  electrsgit=$(curl -s --connect-timeout 5 https://api.github.com/repos/romanz/electrs/releases/latest | jq -r '.tag_name | select(.!=null)')
+}
+fetch_githubversion_btcrpcexplorer() {
+  btcrpcexplorergit=$(curl -s --connect-timeout 5 https://api.github.com/repos/janoside/btc-rpc-explorer/releases/latest | jq -r '.tag_name | select(.!=null)')
+}
+fetch_githubversion_rtl() {
+  rtlgit=$(curl -s --connect-timeout 5 https://api.github.com/repos/Ride-The-Lightning/RTL/releases/latest | jq -r '.tag_name | select(.!=null)')
+}
+
+# Check if we should update with latest versions from github (limit to once every 6 hours)
 gitupdate="0"
 if [ ! -f "$gitstatusfile" ]; then
   gitupdate="1"
 else
-  gitupdate=$(find "${gitstatusfile}" -mtime +1 | wc -l)
+  gitupdate=$(find "${gitstatusfile}" -mmin +360 | wc -l)
 fi
+
+# Fetch or load
 if [ "${gitupdate}" -eq "1" ]; then
   # Calls to github
-  btcgit=$(curl -s https://api.github.com/repos/bitcoin/bitcoin/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
-
-  ln_git_version=$(curl -s $ln_git_repo_url | grep -oP '"tag_name": "\K(.*)(?=")')
-  # Electrs, RPC Explorer and RTL dont have a latest release, just tags
-  electrsgit=$(curl -s https://api.github.com/repos/romanz/electrs/tags | jq -r '.[0].name')
-  btcrpcexplorergit=$(curl -s https://api.github.com/repos/janoside/btc-rpc-explorer/tags | jq -r '.[0].name')
-  rtlgit=$(curl -s https://api.github.com/repos/Ride-The-Lightning/RTL/tags | jq -r '.[] | select(.name | test("rc") | not) | .name' | head -n 1)
-  # write to file TODO: convert to JSON for sanity
-  printf "%s\n%s\n%s\n%s\n%s\n" "${btcgit}" "${ln_git_version}" "${electrsgit}" "${btcrpcexplorergit}" "${rtlgit}" > "${gitstatusfile}"
+  fetch_githubversion_bitcoin
+  fetch_githubversion_lightning
+  fetch_githubversion_electrs
+  fetch_githubversion_btcrpcexplorer
+  fetch_githubversion_rtl
+  # write to json file
+  save_raspibolt_versions
 else
-  # read from file
-  btcgit=$(sed -n '1p' < "${gitstatusfile}")
-  ln_git_version=$(sed -n '2p' < "${gitstatusfile}")
-  electrsgit=$(sed -n '3p' < "${gitstatusfile}")
-  btcrpcexplorergit=$(sed -n '4p' < "${gitstatusfile}")
-  rtlgit=$(sed -n '5p' < "${gitstatusfile}")
+  # load from file
+  load_raspibolt_versions
+fi
 
-  # fill if not yet set
-  if [ -z "$btcgit" ]; then
-    btcgit=$(curl -s https://api.github.com/repos/bitcoin/bitcoin/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
-  fi
-  if [ -z "$ln_git_version" ]; then
-    ln_git_version=$(curl -s $ln_git_repo_url | grep -oP '"tag_name": "\K(.*)(?=")')
-  fi
-  if [ -z "$electrsgit" ]; then
-    electrsgit=$(curl -s https://api.github.com/repos/romanz/electrs/tags | jq -r '.[0].name')
-  fi
-  if [ -z "$btcrpcexplorergit" ]; then
-    btcrpcexplorergit=$(curl -s https://api.github.com/repos/janoside/btc-rpc-explorer/tags | jq -r '.[0].name')
-  fi
-  if [ -z "$rtlgit" ]; then
-    rtlgit=$(curl -s https://api.github.com/repos/Ride-The-Lightning/RTL/tags | jq -r '.[] | select(.name | test("rc") | not) | .name' | head -n 1)
-  fi
-  printf "%s\n%s\n%s\n%s\n%s\n" "${btcgit}" "${ln_git_version}" "${electrsgit}" "${btcrpcexplorergit}" "${rtlgit}" > "${gitstatusfile}"
+# Sanity check values
+resaveraspibolt="0"
+if [ -z "$btcgit" ]; then
+  fetch_githubversion_bitcoin
+  resaveraspibolt="1"
+fi
+if [ -z "$ln_git_version" ]; then
+  fetch_githubversion_lightning
+  resaveraspibolt="1"
+fi
+if [ -z "$electrsgit" ]; then
+  fetch_githubversion_electrs
+  resaveraspibolt="1"
+fi
+if [ -z "$btcrpcexplorergit" ]; then
+  fetch_githubversion_btcrpcexplorer
+  resaveraspibolt="1"
+fi
+if [ -z "$rtlgit" ]; then
+  fetch_githubversion_rtl
+  resaveraspibolt="1"
+fi
+if [ "${resaveraspibolt}" -eq "1" ]; then
+  save_raspibolt_versions
 fi
 
 # create variable btcversion
@@ -222,12 +268,22 @@ if [ -n "${btc_path}" ]; then
 
   btc_title="${btc_title} (${chain}net)"
 
-  # get sync status
-  block_chain="$(bitcoin-cli -datadir=${bitcoin_dir} getblockchaininfo | jq -r '.headers')"
-  block_verified="$(bitcoin-cli -datadir=${bitcoin_dir} getblockchaininfo | jq -r '.blocks')"
-  block_diff=$(("${block_chain}" - "${block_verified}"))
+  # Reduce number of calls to bitcoin by doing once and caching
+  bitcoincli_getblockchaininfo=$(bitcoin-cli -datadir=${bitcoin_dir} getblockchaininfo)
+  bitcoincli_getmempoolinfo=$(bitcoin-cli -datadir=${bitcoin_dir} getmempoolinfo)
+  bitcoincli_getnetworkinfo=$(bitcoin-cli -datadir=${bitcoin_dir} getnetworkinfo)
+  bitcoincli_getpeerinfo=$(bitcoin-cli -datadir=${bitcoin_dir} getpeerinfo)
 
-  progress="$(bitcoin-cli -datadir=${bitcoin_dir} getblockchaininfo | jq -r '.verificationprogress')"
+  # get sync status
+  block_chain="$(echo ${bitcoincli_getblockchaininfo} | jq -r '.headers')"
+  block_verified="$(echo ${bitcoincli_getblockchaininfo} | jq -r '.blocks')"
+  if [ -n "${block_chain}" ]; then
+    block_diff=$(("${block_chain}" - "${block_verified}"))
+  else
+    block_diff=999999
+  fi
+
+  progress="$(echo ${bitcoincli_getblockchaininfo} | jq -r '.verificationprogress')"
   sync_percentage=$(printf "%.2f%%" "$(echo "${progress}" | awk '{print 100 * $1}')")
 
   if [ "${block_diff}" -eq 0 ]; then      # fully synced
@@ -249,12 +305,12 @@ if [ -n "${btc_path}" ]; then
   fi
 
   # get mem pool transactions
-  mempool="$(bitcoin-cli -datadir=${bitcoin_dir} getmempoolinfo | jq -r '.size')"
+  mempool=$(echo ${bitcoincli_getmempoolinfo} | jq -r '.size')
 
   # get connection info
-  connections="$(bitcoin-cli -datadir=${bitcoin_dir} getnetworkinfo | jq .connections)"
-  inbound="$(bitcoin-cli -datadir=${bitcoin_dir} getpeerinfo | jq '.[] | select(.inbound == true)' | jq -s 'length')"
-  outbound="$(bitcoin-cli -datadir=${bitcoin_dir} getpeerinfo | jq '.[] | select(.inbound == false)' | jq -s 'length')"
+  connections=$(echo ${bitcoincli_getnetworkinfo} | jq -r '.connections')
+  inbound=$(echo ${bitcoincli_getpeerinfo} | jq '.[] | select(.inbound == true)' | jq -s 'length')
+  outbound=$(echo ${bitcoincli_getpeerinfo} | jq '.[] | select(.inbound == false)' | jq -s 'length')
 fi
 
 # create variable btcversion
@@ -394,18 +450,18 @@ echo -ne "\033[2K"
 printf "${color_grey}cpu temp: ${color_temp}%-2s°C${color_grey}  tx: %-10s storage:   ${color_storage}%-11s ${color_grey}  load: %s
 ${color_grey}up: %-10s  rx: %-10s 2nd drive: ${color_storage2nd}%-11s${color_grey}   available mem: ${color_ram}%sM
 ${color_yellow}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-${color_green}     .~~.   .~~.      ${color_yellow}\033[1m"₿"\033[22m%-19s${bitcoind_color}%-4s${color_grey}   ${color_yellow}%-20s${lnd_color}%-4s
+${color_green}     .~~.   .~~.      ${color_yellow}\033[1m"₿"\033[22m%-19s${bitcoind_color}%-4s${color_grey}   ${color_yellow}%-20s${ln_color}%-4s
 ${color_green}    '. \ ' ' / .'     ${btcversion_color}%-26s ${ln_version_color}%-24s
 ${color_red}     .~ .~~~${color_yellow}.${color_red}.~.      ${color_grey}Sync    ${sync_color}%-18s ${alias_color}%-24s
 ${color_red}    : .~.'${color_yellow}／/${color_red}~. :     ${color_grey}Mempool %-18s ${color_orange}\033[1m"₿"\033[22m${color_grey}%17s sat
 ${color_red}   ~ (  ${color_yellow}／ /_____${color_red}~    ${color_grey}Peers   %-22s ${color_grey}⚡%16s sat
 ${color_red}  ( : ${color_yellow}／____   ／${color_red} )                              ${color_grey}⏳%16s sat
-${color_red}   ~ .~ (  ${color_yellow}/ ／${color_red}. ~    ${color_yellow}%-20s${electrs_color}%-4s   ${color_grey}∑%17s sat
+${color_red}   ~ .~ (  ${color_yellow}/ ／${color_red}. ~    ${color_yellow}%-20s${electrs_color}%-4s${color_grey}   ∑%17s sat
 ${color_red}    (  : '${color_yellow}/／${color_red}:  )     ${electrsversion_color}%-26s ${color_grey}%s/%s channels
 ${color_red}     '~ .~${color_yellow}°${color_red}~. ~'                                 ${color_grey}Channel.db size: ${color_green}%s
-${color_red}         '~'          ${color_yellow}%-20s${color_grey}${btcrpcexplorer_color}%-4s
-${color_red}                      ${btcrpcexplorerversion_color}%-24s   ${color_yellow}%-20s${rtl_color}%-4s
-${color_red}                                                 ${rtlversion_color}%-24s
+${color_red}         '~'          ${color_yellow}%-20s${color_grey}${btcrpcexplorer_color}%-4s${color_grey}
+${color_red}                      ${btcrpcexplorerversion_color}%-24s${color_grey}   ${color_yellow}%-20s${rtl_color}%-4s${color_grey}
+${color_red}                                                 ${rtlversion_color}%-24s${color_grey}
 
 ${color_grey}For others to connect to this lightning node
 ${color_grey}%s

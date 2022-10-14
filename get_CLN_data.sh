@@ -29,52 +29,57 @@ echo -ne '\r### Loading CoreLN data \r'
 alias_color="${color_grey}"
 ln_alias="$(${lncli} getinfo | jq -r '.alias')" 2>/dev/null
 
+# Reduce number of calls to LND by doing once and caching
+lncli_getinfo=$(${lncli} getinfo)
+lncli_listfunds=$(${lncli} listfunds)
+
 ln_walletbalance=0
 #check if len(outputs) == 0 --> empty wallet
-amount_of_wallet_transactions="$(${lncli} listfunds | jq -r '.outputs | length')"
+amount_of_wallet_transactions=$(echo ${lncli_listfunds} | jq -r '.outputs | length')
 if [ $amount_of_wallet_transactions -gt 0 ];then
-ln_walletbalance=$(${lncli} listfunds | jq -r '.outputs[0].value | tonumber')
+ln_walletbalance=$(echo ${lncli_listfunds) | jq -r '.outputs[0].value | tonumber')
 fi
 
 ## Show channel balance
 ln_channelbalance=0
 #check if len(channels) == 0 --> no channels
-amount_of_channels="$(${lncli} listfunds | jq -r '.channels | length')"
+amount_of_channels=$(echo ${lncli_listfunds} | jq -r '.channels | length')
 if [ $amount_of_channels -gt 0 ];then
-ln_channelbalance=$(${lncli} listfunds | jq -r '.channels[0].our_amount_msat // 0 | gsub("msat";"") | tonumber' | awk '{print $1/1000}' )
+ln_channelbalance=$(echo ${lncli_listfunds} | jq -r '.channels[0].our_amount_msat // 0 | gsub("msat";"") | tonumber' | awk '{print $1/1000}')
 fi
 printf "%0.s#" {1..66}
 
 echo -ne '\r### Loading CoreLN data \r'
 
-ln_channels_online="$(${lncli} getinfo | jq -r '.num_active_channels | tonumber')" 2>/dev/null
-ln_channels_pending = "$(${lncli} getinfo | jq -r '.num_pending_channels | tonumber')" 2>/dev/null
-ln_channels_inactive = "$(${lncli} getinfo | jq -r '.num_inactive_channels | tonumber')" 2>/dev/null
+ln_channels_online=$(echo ${lncli_getinfo} | jq -r '.num_active_channels | tonumber') 2>/dev/null
+ln_channels_pending=$(echo ${lncli_getinfo} | jq -r '.num_pending_channels | tonumber') 2>/dev/null
+ln_channels_inactive=$(echo ${lncli_getinfo} | jq -r '.num_inactive_channels | tonumber') 2>/dev/null
 ln_channels_total=$((ln_channels_online + ln_channels_pending + ln_channels_inactive))
-node_id="$(${lncli} getinfo | jq -r '.id')" 2>/dev/null
-node_address="$(${lncli} getinfo | jq -r '.address[0].address')" 2>/dev/null
-node_port="$(${lncli} getinfo | jq -r '.address[0].port')" 2>/dev/null
+node_id=$(echo ${lncli_getinfo} | jq -r '.id') 2>/dev/null
+node_address=$(echo ${lncli_getinfo} | jq -r '.address[0].address') 2>/dev/null
+node_port=$(echo ${lncli_getinfo} | jq -r '.address[0].port') 2>/dev/null
 ln_connect_addr="$node_id"@"$node_address":"$node_port" 2>/dev/null
 ln_connect_guidance="lightning-cli connect ${ln_connect_addr}"
-ln_external="$(echo "${ln_connect_addr}" | tr "@" " " |  awk '{ print $2 }')" 2>/dev/null
-if [ -z "${ln_external##*onion*}" ]; then
+if [ -z "${node_addr##*onion*}" ]; then
   ln_external="Using TOR Address"
+else
+  ln_external="Using Clearnet"
 fi
 
 printf "%0.s#" {1..70}
 # echo -ne '\r### Loading LND data \r'
 
-# ln_pendingopen=$($lncli pendingchannels  | jq '.pending_open_channels[].channel.local_balance|tonumber ' | awk '{sum+=$0} END{print sum}')
+# ln_pendingopen=$(echo ${lncli_pendingchannels} | jq '.pending_open_channels[].channel.local_balance|tonumber ' | awk '{sum+=$0} END{print sum}')
 # if [ -z "${ln_pendingopen}" ]; then
 #   ln_pendingopen=0
 # fi
 
-# ln_pendingforce=$($lncli pendingchannels  | jq '.pending_force_closing_channels[].channel.local_balance|tonumber ' | awk '{sum+=$0} END{print sum}')
+# ln_pendingforce=$(echo ${lncli_pendingchannels} | jq '.pending_force_closing_channels[].channel.local_balance|tonumber ' | awk '{sum+=$0} END{print sum}')
 # if [ -z "${ln_pendingforce}" ]; then
 #   ln_pendingforce=0
 # fi
 
-# ln_waitingclose=$($lncli pendingchannels  | jq '.waiting_close_channels[].channel.local_balance|tonumber ' | awk '{sum+=$0} END{print sum}')
+# ln_waitingclose=$(echo ${lncli_pendingchannels} | jq '.waiting_close_channels[].channel.local_balance|tonumber ' | awk '{sum+=$0} END{print sum}')
 # if [ -z "${ln_waitingclose}" ]; then
 #   ln_waitingclose=0
 # fi
