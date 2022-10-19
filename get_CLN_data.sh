@@ -37,7 +37,7 @@ ln_walletbalance=0
 #check if len(outputs) == 0 --> empty wallet
 amount_of_wallet_transactions=$(echo ${lncli_listfunds} | jq -r '.outputs | length')
 if [ $amount_of_wallet_transactions -gt 0 ];then
-ln_walletbalance=$(echo ${lncli_listfunds) | jq -r '.outputs[0].value | tonumber')
+ln_walletbalance=$(echo ${lncli_listfunds} | jq -r '.outputs[0].value | tonumber')
 fi
 
 ## Show channel balance
