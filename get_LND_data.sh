@@ -45,6 +45,8 @@ if [ "$wallet_unlocked" -eq "0" ] ; then
   ln_alias="Wallet Locked"
   ln_walletbalance="?"
   ln_channelbalance="?"
+  ln_sync_chain="false"
+  ln_sync_graph="false"
   ln_channels_online="?"
   ln_channels_total="?"
   ln_connect_addr=""
@@ -71,6 +73,9 @@ else
   ln_alias="$(echo ${lncli_getinfo} | jq -r '.alias')" 2>/dev/null
   ln_walletbalance="$(echo ${lncli_walletbalance} | jq -r '.confirmed_balance')" 2>/dev/null
   ln_channelbalance="$(echo ${lncli_channelbalance} | jq -r '.balance')" 2>/dev/null
+
+  ln_sync_chain="$(echo ${lncli_getinfo} | jq -r '.synced_to_chain')" 2>/dev/null
+  ln_sync_graph="$(echo ${lncli_getinfo} | jq -r '.synced_to_graph')" 2>/dev/null
 
   printf "%0.s#" {1..46}
 
@@ -125,7 +130,7 @@ printf "%0.s#" {1..64}
 echo -ne '\r### Determining version \r'
 
 #create variable lndversion
-lndpi=$(lncli getinfo | sed -n 's/^\(.*\)=\(.\+\?\)"\(.*\)/\2/p')
+lndpi=$(lncli getinfo | jq -r '.version | split("=") | .[1]') 2>/dev/null
 if [ "${lndpi}" = "${ln_git_version}" ]; then
   lndversion="${lndpi}"
   lndversion_color="${color_green}"
@@ -133,6 +138,23 @@ else
   lndversion="${lndpi}"" Update!"
   lndversion_color="${color_red}"
 fi
+
+#create variables for ln_sync
+if [ "${ln_sync_chain}" = "true" ]; then
+  ln_sync_note1_color="${color_green}"
+  ln_sync_note1="chain:OK"
+else
+  ln_sync_note1_color="${color_red}"
+  ln_sync_note1="chain:No"
+fi
+if [ "${ln_sync_graph}" = "true" ]; then
+  ln_sync_note2_color="${color_green}"
+  ln_sync_note2="graph:OK"
+else
+  ln_sync_note2_color="${color_red}"
+  ln_sync_note2="graph:No"
+fi
+
 
 printf "%0.s#" {1..70}
 echo -ne '\r### Determining channel db size \r'
@@ -148,5 +170,7 @@ lnd_infofile="${HOME}/.raspibolt.lndata.json"
 lnd_color=$(echo $lnd_color | sed 's/\\/\\\\/g')
 lndversion_color=$(echo $lndversion_color | sed 's/\\/\\\\/g')
 alias_color=$(echo $alias_color| sed 's/\\/\\\\/g')
-printf '{"ln_running":"%s","ln_version":"%s","ln_version_available":"%s","ln_walletbalance":"%s","ln_channelbalance":"%s","ln_pendinglocal":"%s","ln_sum_balance":"%s","ln_channels_online":"%s","ln_channels_total":"%s","ln_channel_db_size":"%s","ln_color":"%s","ln_version_color":"%s","alias_color":"%s","ln_alias":"%s","ln_connect_guidance":"%s"}' "\
-$lnd_running" "$lndversion" "$ln_git_version" "$ln_walletbalance" "$ln_channelbalance" "$ln_pendinglocal" "$ln_sum_balance" "$ln_channels_online" "$ln_channels_total" "$ln_channel_db_size" "$lnd_color" "$lndversion_color" "$alias_color" "$ln_alias" "$ln_connect_guidance" > $lnd_infofile
+ln_sync_note1_color=$(echo $ln_sync_note1_color | sed 's/\\/\\\\/g')
+ln_sync_note2_color=$(echo $ln_sync_note2_color | sed 's/\\/\\\\/g')
+printf '{"ln_running":"%s","ln_version":"%s","ln_version_available":"%s","ln_walletbalance":"%s","ln_channelbalance":"%s","ln_pendinglocal":"%s","ln_sum_balance":"%s","ln_channels_online":"%s","ln_channels_total":"%s","ln_channel_db_size":"%s","ln_color":"%s","ln_version_color":"%s","alias_color":"%s","ln_alias":"%s","ln_connect_guidance":"%s","ln_sync_note1":"%s","ln_sync_note1_color":"%s","ln_sync_note2":"%s","ln_sync_note2_color":"%s"}' "\
+$lnd_running" "$lndversion" "$ln_git_version" "$ln_walletbalance" "$ln_channelbalance" "$ln_pendinglocal" "$ln_sum_balance" "$ln_channels_online" "$ln_channels_total" "$ln_channel_db_size" "$lnd_color" "$lndversion_color" "$alias_color" "$ln_alias" "$ln_connect_guidance" "$ln_sync_note1" "$ln_sync_note1_color" "$ln_sync_note2" "$ln_sync_note2_color" > $lnd_infofile
