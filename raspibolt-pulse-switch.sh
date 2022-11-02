@@ -348,11 +348,10 @@ ln_channels_total="$(echo $ln_file_content | jq -r '.ln_channels_total')"
 ln_channel_db_size="$(echo $ln_file_content | jq -r '.ln_channel_db_size')"
 ln_connect_guidance="$(echo $ln_file_content | jq -r '.ln_connect_guidance')"
 ln_alias="$(echo $ln_file_content | jq -r '.ln_alias')"
-
-
-
-
-
+ln_sync_note1="$(echo $ln_file_content | jq -r '.ln_sync_note1')"
+ln_sync_note1_color="$(echo $ln_file_content | jq -r '.ln_sync_note1_color')"
+ln_sync_note2="$(echo $ln_file_content | jq -r '.ln_sync_note2')"
+ln_sync_note2_color="$(echo $ln_file_content | jq -r '.ln_sync_note2_color')"
 
 # Gather Electrs data
 # ------------------------------------------------------------------------------
@@ -440,7 +439,7 @@ if [ "${mockmode}" -eq 1 ]; then
   sum_balance="350000"
   ln_channels_online="34"
   ln_channels_total="36"
-  ln_connect_guidance="lncli connect c55c05e9148e4e0f120835a6384348dd4d91f77bb1adf256694391bf81a07f03ef@klra7gtbc1j322399pq87bk47ny38brjomvfdg3vb6k3ggahan2dzlyd.onion:9735"
+  ln_connect_guidance="lncli connect cdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcd@version3onionaddressgobbLedegookLookingL3ttersandnumbers.onion:9735"
 fi
 
 # Render output
@@ -450,20 +449,20 @@ echo -ne "\033[2K"
 printf "${color_grey}cpu temp: ${color_temp}%-2s°C${color_grey}  tx: %-10s storage:   ${color_storage}%-11s ${color_grey}  load: %s
 ${color_grey}up: %-10s  rx: %-10s 2nd drive: ${color_storage2nd}%-11s${color_grey}   available mem: ${color_ram}%sM
 ${color_yellow}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-${color_green}     .~~.   .~~.      ${color_yellow}\033[1m"₿"\033[22m%-19s${bitcoind_color}%-4s${color_grey}   ${color_yellow}%-20s${ln_color}%-4s
+${color_green}     .~~.   .~~.      ${color_orange}"₿"${color_yellow}%-19s${bitcoind_color}%-4s${color_grey}   ${color_yellow}%-20s${ln_color}%-4s
 ${color_green}    '. \ ' ' / .'     ${btcversion_color}%-26s ${ln_version_color}%-24s
-${color_red}     .~ .~~~${color_yellow}.${color_red}.~.      ${color_grey}Sync    ${sync_color}%-18s ${alias_color}%-24s
-${color_red}    : .~.'${color_yellow}／/${color_red}~. :     ${color_grey}Mempool %-18s ${color_orange}\033[1m"₿"\033[22m${color_grey}%17s sat
-${color_red}   ~ (  ${color_yellow}／ /_____${color_red}~    ${color_grey}Peers   %-22s ${color_grey}⚡%16s sat
-${color_red}  ( : ${color_yellow}／____   ／${color_red} )                              ${color_grey}⏳%16s sat
-${color_red}   ~ .~ (  ${color_yellow}/ ／${color_red}. ~    ${color_yellow}%-20s${electrs_color}%-4s${color_grey}   ∑%17s sat
+${color_red}     .~ .~~~${color_yellow}.${color_red}.~.      ${color_grey}Sync    ${sync_color}%-18s ${color_grey}Sync${ln_sync_note1_color}%10s${ln_sync_note2_color}%9s
+${color_red}    : .~.'${color_yellow}／/${color_red}~. :     ${color_grey}Mempool %-18s ${color_orange}"₿"${color_grey}%18s sat
+${color_red}   ~ (  ${color_yellow}／ /_____${color_red}~    ${color_grey}Peers   %-22s ${color_grey}%3s %17s sat
+${color_red}  ( : ${color_yellow}／____   ／${color_red} )                              ${color_grey}%3s %17s sat
+${color_red}   ~ .~ (  ${color_yellow}/ ／${color_red}. ~    ${color_yellow}%-20s${electrs_color}%-4s${color_grey}   ∑%18s sat
 ${color_red}    (  : '${color_yellow}/／${color_red}:  )     ${electrsversion_color}%-26s ${color_grey}%s/%s channels
 ${color_red}     '~ .~${color_yellow}°${color_red}~. ~'                                 ${color_grey}Channel.db size: ${color_green}%s
 ${color_red}         '~'          ${color_yellow}%-20s${color_grey}${btcrpcexplorer_color}%-4s${color_grey}
 ${color_red}                      ${btcrpcexplorerversion_color}%-24s${color_grey}   ${color_yellow}%-20s${rtl_color}%-4s${color_grey}
 ${color_red}                                                 ${rtlversion_color}%-24s${color_grey}
 
-${color_grey}For others to connect to this lightning node
+${color_grey}For others to connect to this lightning node: ${alias_color}%s${color_grey}
 ${color_grey}%s
 
 " \
@@ -471,14 +470,15 @@ ${color_grey}%s
 "${uptime}" "${network_rx}" "${storage2nd}" "${ram_avail}" \
 "${btc_title}" "${bitcoind_running}" "Lightning ($ln_implemenation)" "${ln_running}" \
 "${btcversion}" "${ln_version}" \
-"${sync} ${sync_behind}" "${ln_alias}" \
+"${sync} ${sync_behind}" "${ln_sync_note1}" "${ln_sync_note2}" \
 "${mempool} tx" "${ln_walletbalance}" \
-"${connections} (📥${inbound} /📤${outbound})" "${ln_channelbalance}" \
-"${ln_pendinglocal}" \
+"${connections} (📥${inbound} /📤${outbound})" "⚡" "${ln_channelbalance}" \
+"⏳" "${ln_pendinglocal}" \
 "Electrum" "${electrs_running}" "${ln_sum_balance}" \
 "${electrsversion}" "${ln_channels_online}" "${ln_channels_total}" \
 "${ln_channel_db_size}" \
 "Block Explorer" "${btcrpcexplorer_running}" \
 "${btcrpcexplorerversion}" "RTL" "${rtl_running}" \
 "${rtlversion}" \
+"${ln_alias}" \
 "${ln_connect_guidance}"

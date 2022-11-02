@@ -110,6 +110,25 @@ else
   ln_version="${lndpi}"" Update!"
   ln_version_color="${color_red}"
 fi
+
+#create variables for ln_sync
+ln_sync_warning_bitcoind=$(echo ${lncli_getinfo} | jq -r '.warning_bitcoind_sync') 2>/dev/null
+ln_sync_warning_lightningd=$(echo ${lncli_getinfo} | jq -r '.warning_lightningd_sync') 2>/dev/null
+ln_sync_note2_color="${color_red}"
+ln_sync_note2=""
+if [ "${ln_sync_warning_bitcoind}" = "null" ]; then
+  if [ "${ln_sync_warning_lightningd}" = "null" ]; then
+    ln_sync_note1_color="${color_green}"
+    ln_sync_note1="chain:OK"
+  else
+    ln_sync_note1_color="${color_red}"
+    ln_sync_note1="chain:No"
+  fi
+else
+  ln_sync_note1_color="${color_red}"
+  ln_sync_note1="chain:No"
+fi
+
 #get channel.db size
 coreln_dir="/data/cln"
 ln_channel_db_size=$(du -h ${coreln_dir}/bitcoin/lightningd.sqlite3 | awk '{print $1}')
@@ -119,5 +138,7 @@ lnd_infofile="${HOME}/.raspibolt.lndata.json"
 ln_color=$(echo $coreln_color | sed 's/\\/\\\\/g')
 lnversion_color=$(echo $lndversion_color | sed 's/\\/\\\\/g')
 alias_color=$(echo $alias_color| sed 's/\\/\\\\/g')
-printf '{"ln_running":"%s","ln_version":"%s","ln_walletbalance":"%s","ln_channelbalance":"%s","ln_pendinglocal":"%s","ln_sum_balance":"%s","ln_channels_online":"%s","ln_channels_total":"%s","ln_channel_db_size":"%s","ln_color":"%s","ln_version_color":"%s","alias_color":"%s","ln_alias":"%s","ln_connect_guidance":"%s"}' "\
-$ln_running" "$ln_version" "$ln_walletbalance" "$ln_channelbalance" "$ln_pendinglocal" "$ln_sum_balance" "$ln_channels_online" "$ln_channels_total" "$ln_channel_db_size" "$ln_color" "$lnversion_color" "$alias_color" "$ln_alias" "$ln_connect_guidance" > $lnd_infofile
+ln_sync_note1_color=$(echo $ln_sync_note1_color | sed 's/\\/\\\\/g')
+ln_sync_note2_color=$(echo $ln_sync_note2_color | sed 's/\\/\\\\/g')
+printf '{"ln_running":"%s","ln_version":"%s","ln_walletbalance":"%s","ln_channelbalance":"%s","ln_pendinglocal":"%s","ln_sum_balance":"%s","ln_channels_online":"%s","ln_channels_total":"%s","ln_channel_db_size":"%s","ln_color":"%s","ln_version_color":"%s","alias_color":"%s","ln_alias":"%s","ln_connect_guidance":"%s","ln_sync_note1":"%s","ln_sync_note1_color":"%s","ln_sync_note2":"%s","ln_sync_note2_color":"%s"}' "\
+$ln_running" "$ln_version" "$ln_walletbalance" "$ln_channelbalance" "$ln_pendinglocal" "$ln_sum_balance" "$ln_channels_online" "$ln_channels_total" "$ln_channel_db_size" "$ln_color" "$lnversion_color" "$alias_color" "$ln_alias" "$ln_connect_guidance" "$ln_sync_note1" "$ln_sync_note1_color" "$ln_sync_note2" "$ln_sync_note2_color" > $lnd_infofile
