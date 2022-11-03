@@ -330,7 +330,7 @@ esac
 # Gather LN data
 # ------------------------------------------------------------------------------
 printf "%0.s#" {1..60}
-"/usr/local/bin/get_"$ln_implemenation"_data.sh" $chain $color_green $color_red $ln_git_version
+"$(dirname "$0")/get_"$ln_implemenation"_data.sh" $chain $color_green $color_red $ln_git_version
 
 lnd_infofile="${HOME}/.raspibolt.lndata.json"
 ln_file_content=$(cat $lnd_infofile)
