@@ -45,7 +45,7 @@ ln_channelbalance=0
 #check if len(channels) == 0 --> no channels
 amount_of_channels=$(echo ${lncli_listfunds} | jq -r '.channels | length')
 if [ $amount_of_channels -gt 0 ];then
-ln_channelbalance=$(echo ${lncli_listfunds} | jq -r '.channels[0].our_amount_msat // 0 | gsub("msat";"") | tonumber' | awk '{print $1/1000}')
+ln_channelbalance=$(echo ${lncli_listfunds} | jq -r '[.channels[].channel_sat] | add')
 fi
 printf "%0.s#" {1..66}
 
