@@ -7,7 +7,7 @@ ln_git_version=$4
 
 echo -ne '\r### Loading CoreLN data \r'
 
-ln_running=$(systemctl is-active cln)
+ln_running=$(systemctl is-active cln 2>&1)
 coreln_color="${color_green}"
 if [ -z "${ln_running##*inactive*}" ]; then
   ln_running="down"
@@ -20,7 +20,7 @@ else
     ln_running="up"
   fi
 fi
-lncli="/home/cln/lightning/cli/lightning-cli"
+lncli="/home/lightningd/lightning/cli/lightning-cli"
 
 printf "%0.s#" {1..63}
 echo -ne '\r### Loading CoreLN data \r'
@@ -30,8 +30,8 @@ alias_color="${color_grey}"
 ln_alias="$(${lncli} getinfo | jq -r '.alias')" 2>/dev/null
 
 # Reduce number of calls to LND by doing once and caching
-lncli_getinfo=$(${lncli} getinfo)
-lncli_listfunds=$(${lncli} listfunds)
+lncli_getinfo=$(${lncli} getinfo 2>&1)
+lncli_listfunds=$(${lncli} listfunds 2>&1)
 
 ln_walletbalance=0
 #check if len(outputs) == 0 --> empty wallet
@@ -102,7 +102,7 @@ fi
 
 
 #create variable ln_version
-lndpi=$($lncli getinfo |jq -r '.version')
+lndpi=$(echo ${lncli_getinfo} | jq -r '.version') 2>/dev/null
 if [ "${lndpi}" = "${ln_git_version}" ]; then
   ln_version="${lndpi}"
   ln_version_color="${color_green}"
