@@ -10,12 +10,11 @@ set -u
 
 # set datadir
 bitcoin_dir="/mnt/ext/bitcoin"    # Raspibolt 1.x, 2.x
+ext_storage2nd="/mnt/ext"
 if [ -d "/data/bitcoin" ]; then
   bitcoin_dir="/data/bitcoin"     # Raspibolt 3.x
+  ext_storage2nd="/data"
 fi
-
-# set to mount point of secondary storage. This is used to calculate secondary USB usage %
-ext_storage2nd="/mnt/ext"
 
 # set to network device name (usually "eth0" for ethernet, and "wlan0" for wifi)
 network_name="eth0"
@@ -534,8 +533,7 @@ elif [ "$fulcrum_status" = "enabled" ];  then
   if [ "$fulcrum_status" = "active" ]; then
     eserver_running="up"
     eserver_color="${color_green}"
-    # Example Result being parsed:  ["Fulcrum 1.8.2", "1.4"]
-    fulcrumpi=$(echo '{"jsonrpc": "2.0", "method": "server.version", "params": [ "raspibolt", "1.4" ], "id": 0}' | netcat 127.0.0.1 50002 -q 1 | jq -r '.result[0]' | awk '{print "v"substr($1,9)}')
+    fulcrumpi=$(Fulcrum --version | grep Fulcrum | awk '{print "v"$2}')
     if [ "$fulcrumpi" = "$fulcrumgit" ]; then
       eserver_version="$fulcrumpi"
       eserver_version_color="${color_green}"
