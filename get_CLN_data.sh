@@ -130,7 +130,7 @@ else
 fi
 
 #get channel.db size
-coreln_dir="/data/cln"
+coreln_dir="/data/lightningd"
 ln_channel_db_size=$(du -h ${coreln_dir}/bitcoin/lightningd.sqlite3 | awk '{print $1}')
 
 # Write to JSON file
