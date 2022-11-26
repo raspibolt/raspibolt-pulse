@@ -652,7 +652,7 @@ ${color_red}     .~ .~~~${color_yellow}.${color_red}.~.      ${color_grey}Sync  
 ${color_red}    : .~.'${color_yellow}／/${color_red}~. :     ${color_grey}Mempool %-18s ${lserver_dataline_2}${color_grey}
 ${color_red}   ~ (  ${color_yellow}／ /_____${color_red}~    ${color_grey}Peers   %-22s ${lserver_dataline_3}${color_grey}
 ${color_red}  ( : ${color_yellow}／____   ／${color_red} )                              ${lserver_dataline_4}${color_grey}
-${color_red}   ~ .~ (  ${color_yellow}/ ／${color_red}. ~    ${color_yellow}%-20s${eserver_color}%-4s${color_grey}   ${lserver_dataline_5}${color_Grey}
+${color_red}   ~ .~ (  ${color_yellow}/ ／${color_red}. ~    ${color_yellow}%-20s${eserver_color}%-4s${color_grey}   ${lserver_dataline_5}${color_grey}
 ${color_red}    (  : '${color_yellow}/／${color_red}:  )     ${eserver_version_color}%-26s ${lserver_dataline_6}${color_grey}
 ${color_red}     '~ .~${color_yellow}°${color_red}~. ~'                                 ${lserver_dataline_7}${color_grey}
 ${color_red}         '~'          ${color_yellow}%-20s${color_grey}${bserver_color}%-4s${color_grey}
