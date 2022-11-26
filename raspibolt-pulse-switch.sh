@@ -465,7 +465,7 @@ elif [ "$lnd_status" = "enabled" ]; then
   fi
 # Core Lightning specific
 elif [ "$cln_status" = "enabled" ];  then
-  clns_status=$(systemctl is-active $sn_cln 2>&1)
+  cln_status=$(systemctl is-active $sn_cln 2>&1)
   lserver_found=1
   lserver_label="Lightning (CLN)"
   lserver_running="down"
@@ -484,7 +484,7 @@ elif [ "$cln_status" = "enabled" ];  then
     lserver_dataline_3=$(printf "${color_grey}%3s %17s sat" "⚡" "${ln_channelbalance}")
     lserver_dataline_4=$(printf "${color_grey}%3s %17s sat" "∑" "${ln_sum_balance}")
     lserver_dataline_5=$(printf "${color_grey}%s/%s channels" "${ln_channels_online}" "${ln_channels_total}")
-    lserver_dataline_6=$(printf "${color_grey}Channel.db size: ${color_green}%s" "${ln_channel_db_size}")
+    lserver_dataline_6=$(printf "${color_grey}Lightning DB size: ${color_green}%s" "${ln_channel_db_size}")
   fi
 # ... add any future supported lightning server implementation checks here
 fi
@@ -643,18 +643,18 @@ fi
 # ------------------------------------------------------------------------------
 
 echo -ne "\033[2K"
-printf "${color_grey}cpu temp: ${color_temp}%-2s°C${color_grey}  tx: %-10s storage:   ${color_storage}%-11s ${color_grey}  load: %s
-${color_grey}up: %-10s  rx: %-10s 2nd drive: ${color_storage2nd}%-11s${color_grey}   available mem: ${color_ram}%sM
-${color_yellow}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-${color_green}     .~~.   .~~.      ${color_orange}"₿"${color_yellow}%-19s${bitcoind_color}%-4s${color_grey}   ${color_yellow}%-20s${lserver_color}%-4s
-${color_green}    '. \ ' ' / .'     ${btcversion_color}%-26s ${lserver_version_color}%-24s
-${color_red}     .~ .~~~${color_yellow}.${color_red}.~.      ${color_grey}Sync    ${sync_color}%-18s ${lserver_dataline_1}
-${color_red}    : .~.'${color_yellow}／/${color_red}~. :     ${color_grey}Mempool %-18s ${lserver_dataline_2}
-${color_red}   ~ (  ${color_yellow}／ /_____${color_red}~    ${color_grey}Peers   %-22s ${lserver_dataline_3}
-${color_red}  ( : ${color_yellow}／____   ／${color_red} )                              ${lserver_dataline_4}
-${color_red}   ~ .~ (  ${color_yellow}/ ／${color_red}. ~    ${color_yellow}%-20s${eserver_color}%-4s${color_grey}   ${lserver_dataline_5}
-${color_red}    (  : '${color_yellow}/／${color_red}:  )     ${eserver_version_color}%-26s ${lserver_dataline_6}
-${color_red}     '~ .~${color_yellow}°${color_red}~. ~'                                 ${lserver_dataline_7}
+printf "${color_grey}cpu temp: ${color_temp}%-2s°C${color_grey}  tx: %-10s storage:   ${color_storage}%-11s ${color_grey}  load: %s${color_grey}
+${color_grey}up: %-10s  rx: %-10s 2nd drive: ${color_storage2nd}%-11s${color_grey}   available mem: ${color_ram}%sM${color_grey}
+${color_yellow}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${color_grey}
+${color_green}     .~~.   .~~.      ${color_orange}"₿"${color_yellow}%-19s${bitcoind_color}%-4s${color_grey}   ${color_yellow}%-20s${lserver_color}%-4s${color_grey}
+${color_green}    '. \ ' ' / .'     ${btcversion_color}%-26s ${lserver_version_color}%-24s${color_grey}
+${color_red}     .~ .~~~${color_yellow}.${color_red}.~.      ${color_grey}Sync    ${sync_color}%-18s ${lserver_dataline_1}${color_grey}
+${color_red}    : .~.'${color_yellow}／/${color_red}~. :     ${color_grey}Mempool %-18s ${lserver_dataline_2}${color_grey}
+${color_red}   ~ (  ${color_yellow}／ /_____${color_red}~    ${color_grey}Peers   %-22s ${lserver_dataline_3}${color_grey}
+${color_red}  ( : ${color_yellow}／____   ／${color_red} )                              ${lserver_dataline_4}${color_grey}
+${color_red}   ~ .~ (  ${color_yellow}/ ／${color_red}. ~    ${color_yellow}%-20s${eserver_color}%-4s${color_grey}   ${lserver_dataline_5}${color_Grey}
+${color_red}    (  : '${color_yellow}/／${color_red}:  )     ${eserver_version_color}%-26s ${lserver_dataline_6}${color_grey}
+${color_red}     '~ .~${color_yellow}°${color_red}~. ~'                                 ${lserver_dataline_7}${color_grey}
 ${color_red}         '~'          ${color_yellow}%-20s${color_grey}${bserver_color}%-4s${color_grey}
 ${color_red}                      ${bserver_version_color}%-24s${color_grey}   ${color_yellow}%-20s${lwserver_color}%-4s${color_grey}
 ${color_red}                                                 ${lwserver_version_color}%-24s${color_grey}
