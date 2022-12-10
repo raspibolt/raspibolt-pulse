@@ -625,7 +625,7 @@ elif [ "$thunderhub_status" = "enabled" ]; then
     lwserver_running="up"
     lwserver_color="${color_green}"
     thunderhubpi=v$(cd /home/${un_thunderhub}/thunderhub; npm version | grep -oP "thunderhub: '\K(.*)(?=-beta')")
-    if [ "$thunderhunpi" = "$thunderhubgit" ]; then
+    if [ "$thunderhubpi" = "$thunderhubgit" ]; then
       lwserver_version="$thunderhubpi"
       lwserver_version_color="${color_green}"
     else
