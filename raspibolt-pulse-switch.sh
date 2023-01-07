@@ -10,10 +10,16 @@ set -u
 
 # set datadir
 bitcoin_dir="/mnt/ext/bitcoin"    # Raspibolt 1.x, 2.x
-ext_storage2nd="/mnt/ext"
 if [ -d "/data/bitcoin" ]; then
   bitcoin_dir="/data/bitcoin"     # Raspibolt 3.x
-  ext_storage2nd="/data"
+fi
+
+# determine second drive info
+drivecount=$(lsblk --output MOUNTPOINT | grep / | grep -v /boot | sort | wc -l)
+if [ $drivecount -gt 1 ]; then
+  ext_storage2nd=$(lsblk --output MOUNTPOINT | grep / | grep -v /boot | sort | sed -n 2p)
+else
+  ext_storage2nd=""
 fi
 
 # set to network device name (usually "eth0" for ethernet, and "wlan0" for wifi)
@@ -435,8 +441,8 @@ if [ "${mockmode}" -eq 1 ]; then
   # data lines
   lserver_dataline_1=$(printf "${color_grey}Sync%10s" "ready")
   lserver_dataline_2=$(printf "${color_orange}"₿"${color_grey}%18s sat" "${ln_walletbalance}")
-  lserver_dataline_3=$(printf "${color_grey}%3s %17s sat" "⚡" "${ln_channelbalance}")
-  lserver_dataline_4=$(printf "${color_grey}%3s %17s sat" "∑" "${ln_sum_balance}")
+  lserver_dataline_3=$(printf "${color_grey}%3s %16s sat" "⚡" "${ln_channelbalance}")
+  lserver_dataline_4=$(printf "${color_grey}%3s %16s sat" "∑" "${ln_sum_balance}")
   lserver_dataline_5=$(printf "${color_grey}%s/%s channels" "${ln_channels_online}" "${ln_channels_total}")
   lserver_dataline_6=$(printf "${color_grey}Channel.db size: ${color_green}%s" "${ln_channel_db_size}")
 # LND specific
