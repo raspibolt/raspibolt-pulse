@@ -17,7 +17,7 @@ if [ "${chain}" = "test" ]; then
 else
   macaroon_path="${lnd_dir}/data/chain/bitcoin/mainnet/readonly.macaroon"
 fi
-lnd_running=$(systemctl is-active lnd)
+lnd_running=$(systemctl is-active lnd 2>&1)
 lnd_color="${color_green}"
 if [ -z "${lnd_running##*inactive*}" ]; then
   lnd_running="down"
@@ -124,20 +124,21 @@ else
   if [ -n "$ln_pendinglocal" ]; then
     ln_sum_balance=$((ln_sum_balance + ln_pendinglocal ))
   fi
+
+  printf "%0.s#" {1..64}
+  echo -ne '\r### Determining version \r'
+
+  #create variable lndversion
+  lndpi="$(echo ${lncli_getinfo} | jq -r '.version | split("=") | .[1]')" 2>/dev/null
+  if [ "${lndpi}" = "${ln_git_version}" ]; then
+    lndversion="${lndpi}"
+    lndversion_color="${color_green}"
+  else
+    lndversion="${lndpi}"" Update!"
+    lndversion_color="${color_red}"
+  fi
 fi
 
-printf "%0.s#" {1..64}
-echo -ne '\r### Determining version \r'
-
-#create variable lndversion
-lndpi=$(lncli getinfo | jq -r '.version | split("=") | .[1]') 2>/dev/null
-if [ "${lndpi}" = "${ln_git_version}" ]; then
-  lndversion="${lndpi}"
-  lndversion_color="${color_green}"
-else
-  lndversion="${lndpi}"" Update!"
-  lndversion_color="${color_red}"
-fi
 
 #create variables for ln_sync
 if [ "${ln_sync_chain}" = "true" ]; then
