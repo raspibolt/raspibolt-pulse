@@ -68,7 +68,7 @@ trap trap_ctrlC SIGINT SIGTERM
 # print usage information for script
 usage() {
   echo "RaspiBolt Welcome: system status overview
-usage: $0 [--help] [--mock]
+usage: $(basename "$0") [--help] [--mock]
 
 This script can be run on startup: make it executable and
 copy the script to /etc/update-motd.d/
