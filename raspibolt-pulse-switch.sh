@@ -514,7 +514,7 @@ electrs_status=$(systemctl is-enabled ${sn_electrs} 2>&1)
 fulcrum_status=$(systemctl is-enabled ${sn_fulcrum} 2>&1)
 # Electrs specific
 if [ "$electrs_status" = "enabled" ]; then
-  electrs_status=$(systemctl is-actrive ${sn_electrs} 2>&1)
+  electrs_status=$(systemctl is-active ${sn_electrs} 2>&1)
   eserver_found=1
   eserver_label="Electrs"
   eserver_running="down"
@@ -568,7 +568,7 @@ bserver_version_color="${color_red}"
 btcrpcexplorer_status=$(systemctl is-enabled ${sn_btcrpcexplorer} 2>&1)
 # BTC RPC Explorer specific
 if [ "$btcrpcexplorer_status" = "enabled" ]; then
-  btcrpcexplorer_status=$(systemctl is-actrive ${sn_btcrpcexplorer} 2>&1)
+  btcrpcexplorer_status=$(systemctl is-active ${sn_btcrpcexplorer} 2>&1)
   bserver_found=1
   bserver_label="Bitcoin Explorer"
   bserver_running="down"
