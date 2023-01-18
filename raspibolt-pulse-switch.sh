@@ -39,8 +39,8 @@ sn_electrs="electrs"
 un_electrs="electrs"
 sn_fulcrum="fulcrum"
 un_fulcrum="fulcrum"
-sn_rtl="ridethelightning"               # rtl, ridethelightning
-un_rtl="ridethelightning"               # rtl, ridethelightning
+sn_rtl="rtl"               # rtl, ridethelightning
+un_rtl="rtl"               # rtl, ridethelightning
 sn_thunderhub="thunderhub"
 un_thunderhub="thunderhub"
 
