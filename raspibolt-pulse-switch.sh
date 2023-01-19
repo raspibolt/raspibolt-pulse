@@ -103,14 +103,13 @@ echo -ne '\r### Loading System data \r'
 load=$(w|head -1|sed -E 's/.*load average: (.*)/\1/')
 uptime=$(w|head -1|sed -E 's/.*up (.*),.*user.*/\1/'|sed -E 's/([0-9]* days).*/\1/')
 
-# get CPU temp
-cpu=$(cat /sys/class/thermal/thermal_zone0/temp)
-# cpu=$(cat /sys/class/thermal/thermal_zone3/temp)
-
-temp=$((cpu/1000))
-if [ ${temp} -gt 60 ]; then
+# get highest reported temperature
+hitemp=0
+for i in /sys/class/hwmon/hwmon*/temp*_input; do readtemp=$(cat $i); if (( readtemp > hitemp )); then hitemp=$readtemp; fi; done
+temp=$((hitemp/1000))
+if [ ${temp} -gt 68 ]; then
   color_temp="${color_red}\e[7m"
-elif [ ${temp} -gt 50 ]; then
+elif [ ${temp} -gt 55 ]; then
   color_temp="${color_yellow}"
 else
   color_temp="${color_green}"
@@ -420,6 +419,10 @@ lserver_dataline_7="${color_grey}"
 ln_footer=""
 lnd_status=$(systemctl is-enabled $sn_lnd 2>&1)
 cln_status=$(systemctl is-enabled $sn_cln 2>&1)
+if [ "$cln_status" != "enabled" ]; then # fallback from lightningd to cln for service name
+  sn_cln="cln"
+  cln_status=$(systemctl is-enabled $sn_cln 2>&1)
+fi
 # Mock specific
 if [ "${mockmode}" -eq 1 ]; then
   ln_alias="MyRaspiBolt-version3"
@@ -603,6 +606,11 @@ lwserver_color="${color_red}\e[7m"
 lwserver_version=""
 lwserver_version_color="${color_red}"
 rtl_status=$(systemctl is-enabled ${sn_rtl} 2>&1)
+if [ "$rtl_status" != "enabled" ]; then  # fallback from rtl to ridethelightning for user and service name
+  sn_rtl="ridethelightning"
+  un_rtl="ridetheligthning"
+  rtl_status=$(systemctl is-enabled ${sn_rtl} 2>&1)
+fi
 thunderhub_status=$(systemctl is-enabled ${sn_thunderhub} 2>&1)
 # Ride the Ligthning specific
 if [ "$rtl_status" = "enabled" ]; then
