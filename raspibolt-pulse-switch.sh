@@ -26,23 +26,15 @@ fi
 network_name="eth0"
 #network_name="enp0s31f6"
 
-# set expected service and user names... common alternate values
+# expected service names... common alternate values supported
 sn_bitcoin="bitcoind"
-un_bitcoin="bitcoin"
 sn_lnd="lnd"
-un_lnd="lnd"                            # lnd, bitcoin
 sn_cln="lightningd"                     # cln, lightningd
-un_cln="lightningd"                     # cln, lightningd
 sn_btcrpcexplorer="btcrpcexplorer"
-un_btcrpcexplorer="btcrpcexplorer"
 sn_electrs="electrs"
-un_electrs="electrs"
 sn_fulcrum="fulcrum"
-un_fulcrum="fulcrum"
-sn_rtl="rtl"               # rtl, ridethelightning
-un_rtl="rtl"               # rtl, ridethelightning
+sn_rtl="rtl"                            # rtl, ridethelightning
 sn_thunderhub="thunderhub"
-un_thunderhub="thunderhub"
 
 # Helper functionality
 # ------------------------------------------------------------------------------
@@ -571,6 +563,7 @@ bserver_version_color="${color_red}"
 btcrpcexplorer_status=$(systemctl is-enabled ${sn_btcrpcexplorer} 2>&1)
 # BTC RPC Explorer specific
 if [ "$btcrpcexplorer_status" = "enabled" ]; then
+  un_btcrpcexplorer=$(systemctl show -pUser ${sn_btcrpcexplorer} | awk '{split($0,a,"="); print a[2]}')
   btcrpcexplorer_status=$(systemctl is-active ${sn_btcrpcexplorer} 2>&1)
   bserver_found=1
   bserver_label="Bitcoin Explorer"
@@ -606,14 +599,14 @@ lwserver_color="${color_red}\e[7m"
 lwserver_version=""
 lwserver_version_color="${color_red}"
 rtl_status=$(systemctl is-enabled ${sn_rtl} 2>&1)
-if [ "$rtl_status" != "enabled" ]; then  # fallback from rtl to ridethelightning for user and service name
+if [ "$rtl_status" != "enabled" ]; then  # fallback from rtl to ridethelightning for service name
   sn_rtl="ridethelightning"
-  un_rtl="ridetheligthning"
   rtl_status=$(systemctl is-enabled ${sn_rtl} 2>&1)
 fi
 thunderhub_status=$(systemctl is-enabled ${sn_thunderhub} 2>&1)
 # Ride the Ligthning specific
 if [ "$rtl_status" = "enabled" ]; then
+  un_rtl=$(systemctl show -pUser ${sn_rtl} | awk '{split($0,a,"="); print a[2]}')
   rtl_status=$(systemctl is-active ${sn_rtl} 2>&1)
   lwserver_found=1
   lwserver_label="Ride the Lightning"
@@ -631,6 +624,7 @@ if [ "$rtl_status" = "enabled" ]; then
   fi
 # Thunderhub specific
 elif [ "$thunderhub_status" = "enabled" ]; then
+  un_thunderhub=$(systemctl show -pUser ${sn_thunderhub} | awk '{split($0,a,"="); print a[2]}')
   thunderhub_status=$(systemctl is-active ${sn_thunderhub} 2>&1)
   lwserver_found=1
   lwserver_label="Thunderhub"
