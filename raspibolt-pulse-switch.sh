@@ -97,7 +97,7 @@ uptime=$(w|head -1|sed -E 's/.*up (.*),.*user.*/\1/'|sed -E 's/([0-9]* days).*/\
 
 # get highest reported temperature
 hitemp=0
-for i in /sys/class/hwmon/hwmon*/temp*_input; do readtemp=$(cat $i); if (( readtemp > hitemp )); then hitemp=$readtemp; fi; done
+for i in /sys/class/hwmon/hwmon*/temp*_input /sys/class/thermal/thermal_zone*/temp; do if [ -f "$i" ]; then readtemp=$(cat $i); if (( readtemp > hitemp )); then hitemp=$readtemp; fi; fi; done
 temp=$((hitemp/1000))
 if [ ${temp} -gt 68 ]; then
   color_temp="${color_red}\e[7m"
