@@ -97,14 +97,19 @@ uptime=$(w|head -1|sed -E 's/.*up (.*),.*user.*/\1/'|sed -E 's/([0-9]* days).*/\
 
 # get highest reported temperature
 hitemp=0
+temp="N/A"
+color_temp="${color_grey}"
 for i in /sys/class/hwmon/hwmon*/temp*_input /sys/class/thermal/thermal_zone*/temp; do if [ -f "$i" ]; then readtemp=$(cat $i); if (( readtemp > hitemp )); then hitemp=$readtemp; fi; fi; done
-temp=$((hitemp/1000))
-if [ ${temp} -gt 68 ]; then
-  color_temp="${color_red}\e[7m"
-elif [ ${temp} -gt 55 ]; then
-  color_temp="${color_yellow}"
-else
-  color_temp="${color_green}"
+if [ ${hitemp} -gt 0 ]; then
+  temp=$((hitemp/1000))
+  if [ ${temp} -gt 68 ]; then
+    color_temp="${color_red}\e[7m"
+  elif [ ${temp} -gt 55 ]; then
+    color_temp="${color_yellow}"
+  else
+    color_temp="${color_green}"
+  fi
+  temp="${temp}""°C"
 fi
 
 # get memory
@@ -651,7 +656,7 @@ fi
 # ------------------------------------------------------------------------------
 
 echo -ne "\033[2K"
-printf "${color_grey}cpu temp: ${color_temp}%-2s°C${color_grey}  tx: %-10s storage:   ${color_storage}%-11s ${color_grey}  load: %s${color_grey}
+printf "${color_grey}cpu temp: ${color_temp}%-4s${color_grey}  tx: %-10s storage:   ${color_storage}%-11s ${color_grey}  load: %s${color_grey}
 ${color_grey}up: %-10s  rx: %-10s 2nd drive: ${color_storage2nd}%-11s${color_grey}   available mem: ${color_ram}%sM${color_grey}
 ${color_yellow}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${color_grey}
 ${color_green}     .~~.   .~~.      ${color_orange}"₿"${color_yellow}%-19s${bitcoind_color}%-4s${color_grey}   ${color_yellow}%-20s${lserver_color}%-4s${color_grey}
