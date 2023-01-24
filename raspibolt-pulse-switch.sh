@@ -459,8 +459,8 @@ elif [ "$lnd_status" = "enabled" ]; then
     # data lines
     lserver_dataline_1=$(printf "${color_grey}Sync${ln_sync_note1_color}%10s${ln_sync_note2_color}%9s" "${ln_sync_note1}" "${ln_sync_note2}")
     lserver_dataline_2=$(printf "${color_orange}"₿"${color_grey}%18s sat" "${ln_walletbalance}")
-    lserver_dataline_3=$(printf "${color_grey}%3s %17s sat" "⚡" "${ln_channelbalance}")
-    lserver_dataline_4=$(printf "${color_grey}%3s %17s sat" "⏳" "${ln_pendinglocal}")
+    lserver_dataline_3=$(printf "${color_grey}%3s %16s sat" "⚡" "${ln_channelbalance}")
+    lserver_dataline_4=$(printf "${color_grey}%3s %16s sat" "⏳" "${ln_pendinglocal}")
     lserver_dataline_5=$(printf "${color_grey}%3s %17s sat" "∑" "${ln_sum_balance}")
     lserver_dataline_6=$(printf "${color_grey}%s/%s channels" "${ln_channels_online}" "${ln_channels_total}")
     lserver_dataline_7=$(printf "${color_grey}Channel.db size: ${color_green}%s" "${ln_channel_db_size}")
