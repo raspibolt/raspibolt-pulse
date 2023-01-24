@@ -22,10 +22,6 @@ else
   ext_storage2nd=""
 fi
 
-# set to network device name (usually "eth0" for ethernet, and "wlan0" for wifi)
-network_name="eth0"
-#network_name="enp0s31f6"
-
 # expected service names... common alternate values supported
 sn_bitcoin="bitcoind"
 sn_lnd="lnd"
@@ -146,9 +142,9 @@ else
   fi
 fi
 
-# get network traffic
-network_rx=$(ip -h -s link show dev ${network_name} | grep -A1 RX | tail -1 | awk '{print $1}')
-network_tx=$(ip -h -s link show dev ${network_name} | grep -A1 TX | tail -1 | awk '{print $1}')
+# get network traffic (sums from all devices but excludes the loopback named 'lo')
+network_rx=$(ip -j -s link show | jq '.[] | [(select(.ifname!="lo") | .stats64.rx.bytes)//0] | add' | awk -v OFMT='%.0f' '{sum+=$0} END{print sum}' | numfmt --to=iec)
+network_tx=$(ip -j -s link show | jq '.[] | [(select(.ifname!="lo") | .stats64.tx.bytes)//0] | add' | awk -v OFMT='%.0f' '{sum+=$0} END{print sum}' | numfmt --to=iec)
 
 # Gather application versions
 # ------------------------------------------------------------------------------
