@@ -94,7 +94,7 @@ uptime=$(w|head -1|sed -E 's/.*up (.*),.*user.*/\1/'|sed -E 's/([0-9]* days).*/\
 # get highest reported temperature
 temp="N/A"
 color_temp="${color_grey}"
-hitemp=$(grep . /sys/class/hwmon/*/* /sys/class/thermal/*/* 2>/dev/null | grep "temp" | awk '{split($0,a,":"); print a[2]}' | sort -r | head -n 1)
+hitemp=$(grep . /sys/class/hwmon/*/* /sys/class/thermal/*/* 2>/dev/null | grep "temp" | grep "input" | awk '{split($0,a,":"); print a[2]}' | sort -r | head -n 1)
 if (( hitemp > 0 )); then
   temp=$((hitemp/1000))
   if [ ${temp} -gt 68 ]; then
@@ -482,7 +482,7 @@ elif [ "$cln_status" = "enabled" ];  then
     # data lines
     lserver_dataline_1=$(printf "${color_grey}Sync${ln_sync_note1_color}%10s${ln_sync_note2_color}%9s" "${ln_sync_note1}" "${ln_sync_note2}")
     lserver_dataline_2=$(printf "${color_orange}"₿"${color_grey}%18s sat" "${ln_walletbalance}")
-    lserver_dataline_3=$(printf "${color_grey}%3s %17s sat" "⚡" "${ln_channelbalance}")
+    lserver_dataline_3=$(printf "${color_grey}%3s %16s sat" "⚡" "${ln_channelbalance}")
     lserver_dataline_4=$(printf "${color_grey}%3s %17s sat" "∑" "${ln_sum_balance}")
     lserver_dataline_5=$(printf "${color_grey}%s/%s channels" "${ln_channels_online}" "${ln_channels_total}")
     lserver_dataline_6=$(printf "${color_grey}Lightning DB size: ${color_green}%s" "${ln_channel_db_size}")
