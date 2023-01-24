@@ -92,11 +92,10 @@ load=$(w|head -1|sed -E 's/.*load average: (.*)/\1/')
 uptime=$(w|head -1|sed -E 's/.*up (.*),.*user.*/\1/'|sed -E 's/([0-9]* days).*/\1/')
 
 # get highest reported temperature
-hitemp=0
 temp="N/A"
 color_temp="${color_grey}"
-for i in /sys/class/hwmon/hwmon*/temp*_input /sys/class/thermal/thermal_zone*/temp; do if [ -f "$i" ]; then readtemp=$(cat $i); if (( readtemp > hitemp )); then hitemp=$readtemp; fi; fi; done
-if [ ${hitemp} -gt 0 ]; then
+hitemp=$(grep . /sys/class/hwmon/*/* /sys/class/thermal/*/* 2>/dev/null | grep "temp" | awk '{split($0,a,":"); print a[2]}' | sort -r | head -n 1)
+if (( hitemp > 0 )); then
   temp=$((hitemp/1000))
   if [ ${temp} -gt 68 ]; then
     color_temp="${color_red}\e[7m"
