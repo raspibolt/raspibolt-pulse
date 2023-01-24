@@ -349,21 +349,32 @@ if [ -n "${btc_path}" ]; then
   connections=$(echo ${bitcoincli_getnetworkinfo} | jq -r '.connections')
   inbound=$(echo ${bitcoincli_getpeerinfo} | jq '.[] | select(.inbound == true)' | jq -s 'length')
   outbound=$(echo ${bitcoincli_getpeerinfo} | jq '.[] | select(.inbound == false)' | jq -s 'length')
+
+  # create variable btcversion
+  btcpi=$(bitcoin-cli -version |sed -n 's/^.*version //p')
+  case "${btcpi}" in
+    *"${btcgit}"*)
+      btcversion="$btcpi"
+      btcversion_color="${color_green}"
+      ;;
+    *)
+      btcversion="$btcpi"" Update!"
+      btcversion_color="${color_red}"
+      ;;
+  esac
+else
+  # bitcoin-cli was not found
+  btc_title="Bitcoin not active"
+  btcversion="Is Bitcoin installed?"
+  btcversion_color="${color_red}"
+  connections="0"
+  inbound="0"
+  mempool="0"
+  outbound="0"
+  sync="Not synching"
+  sync_color="${color_red}"
+  sync_behind=""
 fi
-
-# create variable btcversion
-btcpi=$(bitcoin-cli -version |sed -n 's/^.*version //p')
-case "${btcpi}" in
-  *"${btcgit}"*)
-    btcversion="$btcpi"
-    btcversion_color="${color_green}"
-    ;;
-  *)
-    btcversion="$btcpi"" Update!"
-    btcversion_color="${color_red}"
-    ;;
-esac
-
 
 # Gather LN data based on preferred implementation
 # ------------------------------------------------------------------------------
