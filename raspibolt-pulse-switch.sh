@@ -126,14 +126,13 @@ else
   color_storage=${color_green}
 fi
 
-storage2nd_free_ratio=$(printf "%.0f" "$(df  | grep ${ext_storage2nd} | awk '{ print $4/$2*100 }')") 2>/dev/null
-storage2nd=$(printf "%s" "$(df -h|grep ${ext_storage2nd}|awk '{print $4}')") 2>/dev/null
-
-if [ -z "${storage2nd}" ]; then
+if [ -z "${ext_storage2nd}" ]; then
   storage2nd="none"
   color_storage2nd=${color_grey}
 else
+  storage2nd=$(printf "%s" "$(df -h|grep ${ext_storage2nd}|awk '{print $4}')") 2>/dev/null
   storage2nd="${storage2nd} free"
+  storage2nd_free_ratio=$(printf "%.0f" "$(df  | grep ${ext_storage2nd} | awk '{ print $4/$2*100 }')") 2>/dev/null
   if [ "${storage2nd_free_ratio}" -lt 10 ]; then
     color_storage2nd="${color_red}\e[7m"
   else
