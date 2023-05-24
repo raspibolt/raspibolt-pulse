@@ -37,6 +37,7 @@ sn_thunderhub="thunderhub"
 
 # set colors
 color_red='\033[0;31m'
+color_red_bg="\e[41m\e[37m"
 color_green='\033[0;32m'
 color_yellow='\033[0;33m'
 color_grey='\033[0;37m'
@@ -98,7 +99,7 @@ hitemp=$(grep . /sys/class/hwmon/*/* /sys/class/thermal/*/* 2>/dev/null | grep "
 if (( hitemp > 0 )); then
   temp=$((hitemp/1000))
   if [ ${temp} -gt 68 ]; then
-    color_temp="${color_red}\e[7m"
+    color_temp="${color_red_bg}"
   elif [ ${temp} -gt 55 ]; then
     color_temp="${color_yellow}"
   else
@@ -111,7 +112,7 @@ fi
 ram_avail=$(free --mebi | grep Mem | awk '{ print $7 }')
 
 if [ "${ram_avail}" -lt 100 ]; then
-  color_ram="${color_red}\e[7m"
+  color_ram="${color_red_bg}"
 else
   color_ram=${color_green}
 fi
@@ -121,7 +122,7 @@ storage_free_ratio=$(printf "%.0f" "$(df | grep "/$" | awk '{ print $4/$2*100 }'
 storage=$(printf "%s" "$(df -h|grep '/$'|awk '{print $4}')") 2>/dev/null
 
 if [ "${storage_free_ratio}" -lt 10 ]; then
-  color_storage="${color_red}\e[7m"
+  color_storage="${color_red_bg}"
 else
   color_storage=${color_green}
 fi
@@ -134,7 +135,7 @@ else
   storage2nd="${storage2nd} free"
   storage2nd_free_ratio=$(printf "%.0f" "$(df  | grep ${ext_storage2nd} | awk '{ print $4/$2*100 }')") 2>/dev/null
   if [ "${storage2nd_free_ratio}" -lt 10 ]; then
-    color_storage2nd="${color_red}\e[7m"
+    color_storage2nd="${color_red_bg}"
   else
     color_storage2nd=${color_green}
   fi
@@ -281,7 +282,7 @@ bitcoind_running=$(systemctl is-active ${sn_bitcoin} 2>&1)
 bitcoind_color="${color_green}"
 if [ -z "${bitcoind_running##*inactive*}" ]; then
   bitcoind_running="down"
-  bitcoind_color="${color_red}\e[7m"
+  bitcoind_color="${color_red_bg}"
 else
   bitcoind_running="up"
 fi
@@ -408,7 +409,7 @@ echo -ne '\r### Loading Lightning data \r'
 lserver_found=0
 lserver_label="No Lightning Server"
 lserver_running=""
-lserver_color="${color_red}\e[7m"
+lserver_color="${color_red_bg}"
 lserver_version=""
 lserver_version_color="${color_red}"
 lserver_dataline_1="${color_grey}"
@@ -512,7 +513,7 @@ echo -ne '\r### Loading Electrum Server data \r'
 eserver_found=0
 eserver_label="No Electrum Server"
 eserver_running=""
-eserver_color="${color_red}\e[7m"
+eserver_color="${color_red_bg}"
 eserver_version=""
 eserver_version_color="${color_red}"
 electrs_status=$(systemctl is-enabled ${sn_electrs} 2>&1)
@@ -567,7 +568,7 @@ echo -ne '\r### Loading Block Explorer data \r'
 bserver_found=0
 bserver_label="No Block Explorer"
 bserver_running=""
-bserver_color="${color_red}\e[7m"
+bserver_color="${color_red_bg}"
 bserver_version=""
 bserver_version_color="${color_red}"
 btcrpcexplorer_status=$(systemctl is-enabled ${sn_btcrpcexplorer} 2>&1)
@@ -605,7 +606,7 @@ echo -ne '\r### Loading Lightning Web App \r'
 lwserver_found=0
 lwserver_label="No Lightning Web App"
 lwserver_running=""
-lwserver_color="${color_red}\e[7m"
+lwserver_color="${color_red_bg}"
 lwserver_version=""
 lwserver_version_color="${color_red}"
 rtl_status=$(systemctl is-enabled ${sn_rtl} 2>&1)
