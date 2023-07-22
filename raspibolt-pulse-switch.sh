@@ -82,6 +82,58 @@ ${color_yellow}RaspiBolt %s:${color_grey} Sovereign \033[1m"₿"\033[22mitcoin f
 ${color_yellow}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 " "3"
 
+
+# Get system updates
+# ------------------------------------------------------------------------------
+updatesstatusfile="${HOME}/.raspibolt.updates.json"
+
+save_updates() {
+  # write to json file
+  cat >${updatesstatusfile} <<EOF
+{
+  "updates": {
+    "available": "${updates}"
+  }
+}
+EOF
+}
+
+load_updates() {
+  updates=$(cat ${updatesstatusfile} | jq -r '.updates.available')
+}
+
+fetch_updates() {
+  # get available update
+  updates="$((`sudo apt update &>/dev/null && sudo apt list --upgradable 2>/dev/null | wc -l`-1))"
+}
+
+# Check if we should check for new updates (limit to once every 6 hours)
+checkupdate="0"
+if [ ! -f "$updatesstatusfile" ]; then
+  checkupdate="1"
+else
+  checkupdate=$(find "${updatesstatusfile}" -mmin +360 | wc -l)
+fi
+
+# Fetch or load
+if [ "${checkupdate}" -eq "1" ]; then
+  fetch_updates
+  # write to json file
+  save_updates
+else
+  # load from file
+  load_updates
+fi
+
+if [ ${updates} -gt 0 ]; then
+  color_updates="${color_red}"
+  updates="${updates} [run 'upgrade']"
+else
+  color_updates="${color_green}"
+fi
+
+
+
 # Gather system data
 # ------------------------------------------------------------------------------
 printf "%0.s#" {1..40}
@@ -664,6 +716,7 @@ fi
 echo -ne "\033[2K"
 printf "${color_grey}cpu temp: ${color_temp}%-4s${color_grey}  tx: %-10s storage:   ${color_storage}%-11s ${color_grey}  load: %s${color_grey}
 ${color_grey}up: %-10s  rx: %-10s 2nd drive: ${color_storage2nd}%-11s${color_grey}   available mem: ${color_ram}%sM${color_grey}
+${color_grey}updates: ${color_updates}%-21s${color_grey}
 ${color_yellow}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${color_grey}
 ${color_green}     .~~.   .~~.      ${color_orange}"₿"${color_yellow}%-19s${bitcoind_color}%-4s${color_grey}   ${color_yellow}%-20s${lserver_color}%-4s${color_grey}
 ${color_green}    '. \ ' ' / .'     ${btcversion_color}%-26s ${lserver_version_color}%-24s${color_grey}
@@ -683,6 +736,7 @@ ${color_grey}%s
 " \
 "${temp}" "${network_tx}" "${storage} free" "${load}" \
 "${uptime}" "${network_rx}" "${storage2nd}" "${ram_avail}" \
+"${updates}" \
 "${btc_title}" "${bitcoind_running}" "${lserver_label}" "${lserver_running}" \
 "${btcversion}" "${lserver_version}" \
 "${sync} ${sync_behind}" \
