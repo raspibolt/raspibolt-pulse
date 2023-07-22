@@ -8,6 +8,9 @@ set -u
 # Script configuration
 # ------------------------------------------------------------------------------
 
+# RaspiBolt version
+raspibolt_version=3
+
 # set datadir
 bitcoin_dir="/mnt/ext/bitcoin"    # Raspibolt 1.x, 2.x
 if [ -d "/data/bitcoin" ]; then
@@ -61,6 +64,7 @@ usage: $(basename "$0")
 --help             display this help and exit
 --last-update, -l  show when files with saved values were last updated
 --mock, -m         run the script mocking the Lightning data
+--quote, -q        show a rondom Bitcoin quote
 
 This script can be run on startup: make it executable and
 copy the script to /etc/update-motd.d/
@@ -110,26 +114,84 @@ function last_updated() {
 
 # check script arguments
 mockmode=0
+showquote=0
 if [[ ${#} -gt 0 ]]; then
-  if [[ "${1}" == "-m" ]] || [[ "${1}" == "--mock" ]]; then
-    mockmode=1
-  elif [[ "${1}" == "-l" ]] || [[ "${1}" == "--last-update" ]]; then
-    last_updated
-    exit 0
-  else
-    usage
-    exit 0
-  fi
+  for param in "$@"; do
+    if [[ "${param}" == "-q" ]] || [[ "${param}" == "--quote" ]]; then
+      showquote=1
+    elif [[ "${param}" == "-m" ]] || [[ "${param}" == "--mock" ]]; then
+      mockmode=1
+    elif [[ "${param}" == "-l" ]] || [[ "${param}" == "--last-update" ]]; then
+      last_updated
+      exit 0
+    elif [[ "${param}" == "--help" ]]; then
+      usage
+      exit 0
+    else
+      echo -ne "${color_red}Unkown option: ${param}${color_grey}\n\n"
+      usage
+      exit 0
+    fi
+  done
+fi
+
+
+
+# Get a random Bitcoin quote
+# ------------------------------------------------------------------------------
+function wrap_text() {
+  string="$1"
+  max_length=78
+  string="${string//\(.\{$max_length,\}\)/\1\u200B}"
+  wrapped=$(fold -sw $max_length <<< "$string")
+
+  echo "$wrapped"
+}
+
+function trim_left() {
+  string="$1"
+  trimmed="${string#"${string%%[![:space:]]*}"}"
+  echo "$trimmed"
+}
+
+function format_date() {
+  input_date="$1"
+  timestamp=$(date -d "$input_date" +%s)
+  day=$(date -d "@$timestamp" +%e)
+  month=$(date -d "@$timestamp" +%B)
+  year=$(date -d "@$timestamp" +%Y)
+
+  echo "$(trim_left "$day") $month $year"
+}
+
+function get_random_bitcoin_quote() {
+  url="https://bitcoinexplorer.org/api/quotes/random"
+  response=$(curl -s "$url")
+  text=$(echo "$response" | jq -r '.text')
+  wrapped_text=$(wrap_text "$text")
+  speaker=$(echo "$response" | jq -r '.speaker')
+  url=$(echo "$response" | jq -r '.url')
+  date=$(echo "$response" | jq -r '.date')
+
+  echo "\n\"${wrapped_text}\"\n- ${speaker}, $(format_date ${date})\n"
+}
+
+quote=""
+if [ "${showquote}" -eq 1 ]; then
+  quote=$(get_random_bitcoin_quote)
 fi
 
 
 
 # Print first welcome message
 # ------------------------------------------------------------------------------
-printf "
-${color_yellow}RaspiBolt %s:${color_grey} Sovereign \033[1m"₿"\033[22mitcoin full node
-${color_yellow}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-" "3"
+# This is a hack, as bash does not support trailing new lines when using substitution :-(
+echo -e "${color_yellow}RaspiBolt ${raspibolt_version}:${color_grey} Sovereign \033[1m"₿"\033[22mitcoin full node"
+if [ "${showquote}" -eq 1 ]; then
+  echo -e "$(get_random_bitcoin_quote)"
+fi
+echo -e "${color_yellow}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
 
 
 # Get system updates
