@@ -56,11 +56,56 @@ trap trap_ctrlC SIGINT SIGTERM
 # print usage information for script
 usage() {
   echo "RaspiBolt Welcome: system status overview
-usage: $(basename "$0") [--help] [--mock]
+usage: $(basename "$0") 
+
+--help             display this help and exit
+--last-update, -l  show when files with saved values were last updated
+--mock, -m         run the script mocking the Lightning data
 
 This script can be run on startup: make it executable and
 copy the script to /etc/update-motd.d/
 "
+}
+
+function secs_since_modified() {
+  filename="$1"
+  mtime=$(stat -c %Y "$filename")
+  now=$(date +%s)
+  elapsed=$((now - mtime))
+
+  echo $elapsed
+}
+
+function convert_secs_to_hhmmss() {
+  seconds=$1
+  hours=$((seconds / 3600))
+  minutes=$((seconds % 3600 / 60))
+  seconds=$((seconds % 60))
+  formatted=$(printf "%02d:%02d:%02d\n" $hours $minutes $seconds)
+
+  echo "$formatted"
+}
+
+function convert_secs_to_min() {
+  seconds=$1
+  minutes=$((seconds / 60))
+  
+  echo $minutes
+}
+function print_last_modified() {
+  path=$1
+  seconds=$(secs_since_modified "$path")
+  echo "${path}: modified $(convert_secs_to_hhmmss ${seconds}) ago [$(convert_secs_to_min ${seconds}) mins]"
+}
+
+updatesstatusfile="${HOME}/.raspibolt.updates.json"
+gitstatusfile="${HOME}/.raspibolt.versions.json"
+lnd_infofile="${HOME}/.raspibolt.lndata.json"
+
+function last_updated() {
+  print_last_modified $updatesstatusfile
+  print_last_modified $gitstatusfile
+  print_last_modified $lnd_infofile
 }
 
 # check script arguments
@@ -68,11 +113,15 @@ mockmode=0
 if [[ ${#} -gt 0 ]]; then
   if [[ "${1}" == "-m" ]] || [[ "${1}" == "--mock" ]]; then
     mockmode=1
+  elif [[ "${1}" == "-l" ]] || [[ "${1}" == "--last-update" ]]; then
+    last_updated
+    exit 0
   else
     usage
     exit 0
   fi
 fi
+
 
 
 # Print first welcome message
@@ -81,6 +130,56 @@ printf "
 ${color_yellow}RaspiBolt %s:${color_grey} Sovereign \033[1m"₿"\033[22mitcoin full node
 ${color_yellow}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 " "3"
+
+
+# Get system updates
+# ------------------------------------------------------------------------------
+save_updates() {
+  # write to json file
+  cat >${updatesstatusfile} <<EOF
+{
+  "updates": {
+    "available": "${updates}"
+  }
+}
+EOF
+}
+
+load_updates() {
+  updates=$(cat ${updatesstatusfile} | jq -r '.updates.available')
+}
+
+fetch_updates() {
+  # get available update
+  updates="$((`sudo apt update &>/dev/null && sudo apt list --upgradable 2>/dev/null | wc -l`-1))"
+}
+
+# Check if we should check for new updates (limit to once every 6 hours)
+checkupdate="0"
+if [ ! -f "$updatesstatusfile" ]; then
+  checkupdate="1"
+else
+  checkupdate=$(find "${updatesstatusfile}" -mmin +360 | wc -l)
+fi
+
+# Fetch or load
+if [ "${checkupdate}" -eq "1" ]; then
+  fetch_updates
+  # write to json file
+  save_updates
+else
+  # load from file
+  load_updates
+fi
+
+if [ ${updates} -gt 0 ]; then
+  color_updates="${color_red}"
+  updates="${updates} [run 'upgrade']"
+else
+  color_updates="${color_green}"
+fi
+
+
 
 # Gather system data
 # ------------------------------------------------------------------------------
@@ -145,10 +244,14 @@ fi
 network_rx=$(ip -j -s link show | jq '.[] | [(select(.ifname!="lo") | .stats64.rx.bytes)//0] | add' | awk -v OFMT='%.0f' '{sum+=$0} END{print sum}' | numfmt --to=iec)
 network_tx=$(ip -j -s link show | jq '.[] | [(select(.ifname!="lo") | .stats64.tx.bytes)//0] | add' | awk -v OFMT='%.0f' '{sum+=$0} END{print sum}' | numfmt --to=iec)
 
+# get local network ip address
+local_ip=$(ip addr show | grep -w inet | grep -v 127.0.0.1 | awk '{print $2}' | cut -d/ -f1)
+local_hostname=$(hostname)
+
+
+
 # Gather application versions
 # ------------------------------------------------------------------------------
-gitstatusfile="${HOME}/.raspibolt.versions.json"
-
 save_raspibolt_versions() {
   # write to json file
   cat >${gitstatusfile} <<EOF
@@ -307,7 +410,7 @@ if [ -n "${btc_path}" ]; then
       btcversion_color="${color_green}"
       ;;
     *)
-      btcversion="$btcpi"" Update!"
+      btcversion="${btcpi} to ${btcgit}"
       btcversion_color="${color_red}"
       ;;
   esac
@@ -381,7 +484,6 @@ fi
 printf "%0.s#" {1..60}
 
 load_lightning_data() {
-  lnd_infofile="${HOME}/.raspibolt.lndata.json"
   ln_file_content=$(cat $lnd_infofile)
   ln_color="$(echo $ln_file_content | jq -r '.ln_color')"
   ln_version_color="$(echo $ln_file_content | jq -r '.ln_version_color')"
@@ -533,7 +635,7 @@ if [ "$electrs_status" = "enabled" ]; then
       eserver_version="$electrspi"
       eserver_version_color="${color_green}"
     else
-      eserver_version="$electrspi"" Update!"
+      eserver_version="${electrspi} to ${electrsgit}"
     fi
   fi
 # Fulcrum specific
@@ -550,7 +652,7 @@ elif [ "$fulcrum_status" = "enabled" ];  then
       eserver_version="$fulcrumpi"
       eserver_version_color="${color_green}"
     else
-      eserver_version="$fulcrumpi"" Update!"
+      eserver_version="${fulcrumpi} to ${fulcrumgit}"
     fi
   fi
 # ... add any future supported electrum server implementation checks here
@@ -587,7 +689,7 @@ if [ "$btcrpcexplorer_status" = "enabled" ]; then
       bserver_version="$btcrpcexplorerpi"
       bserver_version_color="${color_green}"
     else
-      bserver_version="$btcrpcexplorerpi"" Update!"
+      bserver_version="${btcrpcexplorerpi} to ${btcrpcexplorergit}"
     fi
   fi
 # ... add any future supported blockchain explorer implementation checks here
@@ -630,7 +732,7 @@ if [ "$rtl_status" = "enabled" ]; then
       lwserver_version="$rtlpi"
       lwserver_version_color="${color_green}"
     else
-      lwserver_version="$rtlpi"" Update!"
+      lwserver_version="${rtlpi} to ${rtlgit}"
     fi
   fi
 # Thunderhub specific
@@ -648,7 +750,7 @@ elif [ "$thunderhub_status" = "enabled" ]; then
       lwserver_version="$thunderhubpi"
       lwserver_version_color="${color_green}"
     else
-      lwserver_version="$thunderhubpi"" Update!"
+      lwserver_version="${thunderhubpi} to ${thunderhubgit}"
     fi
   fi
 # ... add any future supported lightning web app implementation checks here
@@ -664,6 +766,7 @@ fi
 echo -ne "\033[2K"
 printf "${color_grey}cpu temp: ${color_temp}%-4s${color_grey}  tx: %-10s storage:   ${color_storage}%-11s ${color_grey}  load: %s${color_grey}
 ${color_grey}up: %-10s  rx: %-10s 2nd drive: ${color_storage2nd}%-11s${color_grey}   available mem: ${color_ram}%sM${color_grey}
+${color_grey}updates: ${color_updates}%-21s${color_grey} ip addr: %-15s hostname: %-20s
 ${color_yellow}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${color_grey}
 ${color_green}     .~~.   .~~.      ${color_orange}"₿"${color_yellow}%-19s${bitcoind_color}%-4s${color_grey}   ${color_yellow}%-20s${lserver_color}%-4s${color_grey}
 ${color_green}    '. \ ' ' / .'     ${btcversion_color}%-26s ${lserver_version_color}%-24s${color_grey}
@@ -683,11 +786,12 @@ ${color_grey}%s
 " \
 "${temp}" "${network_tx}" "${storage} free" "${load}" \
 "${uptime}" "${network_rx}" "${storage2nd}" "${ram_avail}" \
+"${updates}" "${local_ip}" "${local_hostname}" \
 "${btc_title}" "${bitcoind_running}" "${lserver_label}" "${lserver_running}" \
 "${btcversion}" "${lserver_version}" \
 "${sync} ${sync_behind}" \
 "${mempool} tx" \
-"${connections} (📥${inbound} /📤${outbound})"  \
+"${connections} (📥${inbound}/📤${outbound})"  \
 "${eserver_label}" "${eserver_running}" \
 "${eserver_version}" \
 "${bserver_label}" "${bserver_running}" \
