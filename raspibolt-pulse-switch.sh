@@ -197,6 +197,12 @@ fi
 network_rx=$(ip -j -s link show | jq '.[] | [(select(.ifname!="lo") | .stats64.rx.bytes)//0] | add' | awk -v OFMT='%.0f' '{sum+=$0} END{print sum}' | numfmt --to=iec)
 network_tx=$(ip -j -s link show | jq '.[] | [(select(.ifname!="lo") | .stats64.tx.bytes)//0] | add' | awk -v OFMT='%.0f' '{sum+=$0} END{print sum}' | numfmt --to=iec)
 
+# get local network ip address
+local_ip=$(ip addr show | grep -w inet | grep -v 127.0.0.1 | awk '{print $2}' | cut -d/ -f1)
+local_hostname=$(hostname)
+
+
+
 # Gather application versions
 # ------------------------------------------------------------------------------
 gitstatusfile="${HOME}/.raspibolt.versions.json"
@@ -716,7 +722,7 @@ fi
 echo -ne "\033[2K"
 printf "${color_grey}cpu temp: ${color_temp}%-4s${color_grey}  tx: %-10s storage:   ${color_storage}%-11s ${color_grey}  load: %s${color_grey}
 ${color_grey}up: %-10s  rx: %-10s 2nd drive: ${color_storage2nd}%-11s${color_grey}   available mem: ${color_ram}%sM${color_grey}
-${color_grey}updates: ${color_updates}%-21s${color_grey}
+${color_grey}updates: ${color_updates}%-21s${color_grey} ip addr: %-15s hostname: %-20s
 ${color_yellow}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${color_grey}
 ${color_green}     .~~.   .~~.      ${color_orange}"₿"${color_yellow}%-19s${bitcoind_color}%-4s${color_grey}   ${color_yellow}%-20s${lserver_color}%-4s${color_grey}
 ${color_green}    '. \ ' ' / .'     ${btcversion_color}%-26s ${lserver_version_color}%-24s${color_grey}
@@ -736,7 +742,7 @@ ${color_grey}%s
 " \
 "${temp}" "${network_tx}" "${storage} free" "${load}" \
 "${uptime}" "${network_rx}" "${storage2nd}" "${ram_avail}" \
-"${updates}" \
+"${updates}" "${local_ip}" "${local_hostname}" \
 "${btc_title}" "${bitcoind_running}" "${lserver_label}" "${lserver_running}" \
 "${btcversion}" "${lserver_version}" \
 "${sync} ${sync_behind}" \
