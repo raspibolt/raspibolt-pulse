@@ -56,11 +56,56 @@ trap trap_ctrlC SIGINT SIGTERM
 # print usage information for script
 usage() {
   echo "RaspiBolt Welcome: system status overview
-usage: $(basename "$0") [--help] [--mock]
+usage: $(basename "$0") 
+
+--help             display this help and exit
+--last-update, -l  show when files with saved values were last updated
+--mock, -m         run the script mocking the Lightning data
 
 This script can be run on startup: make it executable and
 copy the script to /etc/update-motd.d/
 "
+}
+
+function secs_since_modified() {
+  filename="$1"
+  mtime=$(stat -c %Y "$filename")
+  now=$(date +%s)
+  elapsed=$((now - mtime))
+
+  echo $elapsed
+}
+
+function convert_secs_to_hhmmss() {
+  seconds=$1
+  hours=$((seconds / 3600))
+  minutes=$((seconds % 3600 / 60))
+  seconds=$((seconds % 60))
+  formatted=$(printf "%02d:%02d:%02d\n" $hours $minutes $seconds)
+
+  echo "$formatted"
+}
+
+function convert_secs_to_min() {
+  seconds=$1
+  minutes=$((seconds / 60))
+  
+  echo $minutes
+}
+function print_last_modified() {
+  path=$1
+  seconds=$(secs_since_modified "$path")
+  echo "${path}: modified $(convert_secs_to_hhmmss ${seconds}) ago [$(convert_secs_to_min ${seconds}) mins]"
+}
+
+updatesstatusfile="${HOME}/.raspibolt.updates.json"
+gitstatusfile="${HOME}/.raspibolt.versions.json"
+lnd_infofile="${HOME}/.raspibolt.lndata.json"
+
+function last_updated() {
+  print_last_modified $updatesstatusfile
+  print_last_modified $gitstatusfile
+  print_last_modified $lnd_infofile
 }
 
 # check script arguments
@@ -68,11 +113,15 @@ mockmode=0
 if [[ ${#} -gt 0 ]]; then
   if [[ "${1}" == "-m" ]] || [[ "${1}" == "--mock" ]]; then
     mockmode=1
+  elif [[ "${1}" == "-l" ]] || [[ "${1}" == "--last-update" ]]; then
+    last_updated
+    exit 0
   else
     usage
     exit 0
   fi
 fi
+
 
 
 # Print first welcome message
@@ -85,8 +134,6 @@ ${color_yellow}━━━━━━━━━━━━━━━━━━━━━�
 
 # Get system updates
 # ------------------------------------------------------------------------------
-updatesstatusfile="${HOME}/.raspibolt.updates.json"
-
 save_updates() {
   # write to json file
   cat >${updatesstatusfile} <<EOF
@@ -205,8 +252,6 @@ local_hostname=$(hostname)
 
 # Gather application versions
 # ------------------------------------------------------------------------------
-gitstatusfile="${HOME}/.raspibolt.versions.json"
-
 save_raspibolt_versions() {
   # write to json file
   cat >${gitstatusfile} <<EOF
@@ -439,7 +484,6 @@ fi
 printf "%0.s#" {1..60}
 
 load_lightning_data() {
-  lnd_infofile="${HOME}/.raspibolt.lndata.json"
   ln_file_content=$(cat $lnd_infofile)
   ln_color="$(echo $ln_file_content | jq -r '.ln_color')"
   ln_version_color="$(echo $ln_file_content | jq -r '.ln_version_color')"
