@@ -365,7 +365,7 @@ if [ -n "${btc_path}" ]; then
       btcversion_color="${color_green}"
       ;;
     *)
-      btcversion="$btcpi"" Update!"
+      btcversion="${btcpi} to ${btcgit}"
       btcversion_color="${color_red}"
       ;;
   esac
@@ -591,7 +591,7 @@ if [ "$electrs_status" = "enabled" ]; then
       eserver_version="$electrspi"
       eserver_version_color="${color_green}"
     else
-      eserver_version="$electrspi"" Update!"
+      eserver_version="${electrspi} to ${electrsgit}"
     fi
   fi
 # Fulcrum specific
@@ -608,7 +608,7 @@ elif [ "$fulcrum_status" = "enabled" ];  then
       eserver_version="$fulcrumpi"
       eserver_version_color="${color_green}"
     else
-      eserver_version="$fulcrumpi"" Update!"
+      eserver_version="${fulcrumpi} to ${fulcrumgit}"
     fi
   fi
 # ... add any future supported electrum server implementation checks here
@@ -645,7 +645,7 @@ if [ "$btcrpcexplorer_status" = "enabled" ]; then
       bserver_version="$btcrpcexplorerpi"
       bserver_version_color="${color_green}"
     else
-      bserver_version="$btcrpcexplorerpi"" Update!"
+      bserver_version="${btcrpcexplorerpi} to ${btcrpcexplorergit}"
     fi
   fi
 # ... add any future supported blockchain explorer implementation checks here
@@ -688,7 +688,7 @@ if [ "$rtl_status" = "enabled" ]; then
       lwserver_version="$rtlpi"
       lwserver_version_color="${color_green}"
     else
-      lwserver_version="$rtlpi"" Update!"
+      lwserver_version="${rtlpi} to ${rtlgit}"
     fi
   fi
 # Thunderhub specific
@@ -706,7 +706,7 @@ elif [ "$thunderhub_status" = "enabled" ]; then
       lwserver_version="$thunderhubpi"
       lwserver_version_color="${color_green}"
     else
-      lwserver_version="$thunderhubpi"" Update!"
+      lwserver_version="${thunderhubpi} to ${thunderhubgit}"
     fi
   fi
 # ... add any future supported lightning web app implementation checks here
@@ -747,7 +747,7 @@ ${color_grey}%s
 "${btcversion}" "${lserver_version}" \
 "${sync} ${sync_behind}" \
 "${mempool} tx" \
-"${connections} (📥${inbound} /📤${outbound})"  \
+"${connections} (📥${inbound}/📤${outbound})"  \
 "${eserver_label}" "${eserver_running}" \
 "${eserver_version}" \
 "${bserver_label}" "${bserver_running}" \
